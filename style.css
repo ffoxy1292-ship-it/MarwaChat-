@@ -178,3 +178,28 @@ h1 {
   .message { max-width: 85%; }
   h1 { font-size: 1.5rem; }
   }
+.feedback-buttons {
+    display: flex;
+    gap: 5px;
+    margin-top: 8px;
+    justify-content: flex-start;
+}
+
+.feedback-buttons button {
+    background: transparent;
+    border: 1px solid #ddd;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.feedback-buttons button:hover {
+    background: #f0f0f0;
+    transform: scale(1.1);
+}
