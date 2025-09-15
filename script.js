@@ -81,7 +81,7 @@ const keywords = {
     weather: ['weather', 'sunny', 'rain']
   }
 };
-
+let conversationHistory = [];
 let currentLanguage = 'ar';
 
 function detectEmotion(text, language) {
@@ -111,6 +111,12 @@ function detectEmotion(text, language) {
 }
 
 function sendMessage() {
+    // حفظ الرسالة في الذاكرة
+    conversationHistory.push(userInput);
+    if (conversationHistory.length > 5) conversationHistory.shift(); // احتفظي بآخر 5 رسائل فقط
+    
+    // الباقي stays the same...
+    const userInput = document.getElementById('user-input').value.trim();
   const userInput = document.getElementById('user-input').value.trim();
   if (!userInput) return;
 
@@ -130,7 +136,8 @@ function sendMessage() {
   const typingTime = Math.min(3000, Math.max(1000, userInput.length * 50));
 
   setTimeout(() => {
-    const emotion = detectEmotion(userInput, currentLanguage);
+    const contextText = conversationHistory.join(' '); // اجمعي آخر 5 رسائل
+const emotion = detectEmotion(contextText, currentLanguage); // حلليهم معًا
     const possibleResponses = responses[currentLanguage][emotion] || 
                              responses[currentLanguage]['greeting'];
     const randomResponse = possibleResponses[Math.floor(Math.random() * possibleResponses.length)];
