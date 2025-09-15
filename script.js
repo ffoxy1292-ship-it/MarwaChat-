@@ -111,13 +111,14 @@ function detectEmotion(text, language) {
 }
 
 function sendMessage() {
-    // حفظ الرسالة في الذاكرة
-    conversationHistory.push(userInput);
-    if (conversationHistory.length > 5) conversationHistory.shift(); // احتفظي بآخر 5 رسائل فقط
     
     // الباقي stays the same...
     const userInput = document.getElementById('user-input').value.trim();
   if (!userInput) return;
+  // حفظ الرسالة في الذاكرة
+    conversationHistory.push(userInput);
+    if (conversationHistory.length > 5) conversationHistory.shift(); // احتفظي بآخر 5 رسائل فقط
+    
 
   const chatContainer = document.getElementById('chat-container');
   const userMsg = document.createElement('div');
