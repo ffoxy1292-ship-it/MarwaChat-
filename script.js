@@ -117,7 +117,6 @@ function sendMessage() {
     
     // الباقي stays the same...
     const userInput = document.getElementById('user-input').value.trim();
-  const userInput = document.getElementById('user-input').value.trim();
   if (!userInput) return;
 
   const chatContainer = document.getElementById('chat-container');
@@ -145,9 +144,23 @@ const emotion = detectEmotion(contextText, currentLanguage); // حلليهم م�
     typingIndicator.style.display = 'none';
 
     const botMsg = document.createElement('div');
-    botMsg.className = 'message bot-message';
-    botMsg.textContent = randomResponse;
-    chatContainer.appendChild(botMsg);
+botMsg.className = 'message bot-message';
+botMsg.textContent = randomResponse;
+
+// إنشاء عنصر لحاوية أزرار التقييم
+const feedbackDiv = document.createElement('div');
+feedbackDiv.className = 'feedback-buttons';
+feedbackDiv.innerHTML = `
+    <button onclick="rateResponse(${JSON.stringify(randomResponse)}, 'good')">👍</button>
+    <button onclick="rateResponse(${JSON.stringify(randomResponse)}, 'bad')">👎</button>
+`;
+
+// إضافة الأزرار إلى رسالة البوت
+botMsg.appendChild(feedbackDiv);
+
+// ثم إضافة الرسالة إلى الدردشة
+chatContainer.appendChild(botMsg);
+  
     chatContainer.scrollTop = chatContainer.scrollHeight;
   }, typingTime);
 }
@@ -178,3 +191,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+function rateResponse(responseText, rating) {
+    // احفظي التقييم في localStorage
+    let ratings = JSON.parse(localStorage.getItem('responseRatings') || '{}');
+    ratings[responseText] = rating;
+    localStorage.setItem('responseRatings', JSON.stringify(ratings));
+    alert('شكرًا للتقييم! ستتحسن ردودي بناءً على ملاحظاتك.');
+}
