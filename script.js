@@ -138,6 +138,42 @@ function updateConversationContext(text, emotion) {
         conversationContext.currentTopic = mentioned[0];
         conversationContext.mentionedTopics.push(...mentioned);
     }
+  function getSmartResponse(emotion, context) {
+    const contextualResponses = {
+        sadness: {
+            work: "أتفهم ضغط العمل. هل تريدين نصيحة عملية لتخفيف التوتر؟",
+            study: "الدراسة ممكن تكون صعبة احياناً. أي مادة تعتبرينها الأصعب؟",
+            general: "أسمع حزنك في صوتك. تريدين تتكلمين عن الشيء المزعج؟"
+        },
+        happiness: {
+            work: "واو! يبدو أن العمل يمشي بشكل رائع اليوم! 💼✨",
+            study: "مبروك! إنجاز الدراسة شعور لا يوصف! 🎓🔥", 
+            general: "فرحتي لفرحك! ايش الشيء الجميل اللي صار؟ 🌈"
+        },
+        // أضيفي باقي المشاعر!
+        anger: {
+            work: "الشغل أحياناً يزعل. ايش اللي مزعجك بالضبط؟",
+            study: "الدراسة ممكن تسبب عصبية. ايش المادة اللي تزعلك؟",
+            general: "أسمع غضبك. تريدين تتكلمين عن اللي صار؟"
+        },
+        greeting: {
+            general: "أهلاً وسهلاً! كيف يمكنني مساعدتك اليوم؟ 🤗"
+        },
+        weather: {
+            general: "الطقس جميل اليوم، أليس كذلك؟ ☀️"
+        }
+    };
+
+    // إذا مافي رد سياقي، استخدمي النظام القديم
+    if (!contextualResponses[emotion]) {
+        const possibleResponses = responses[currentLanguage][emotion] || responses[currentLanguage]['greeting'];
+        return possibleResponses[Math.floor(Math.random() * possibleResponses.length)];
+    }
+
+    return contextualResponses[emotion]?.[context.currentTopic] 
+        || contextualResponses[emotion]?.general
+        || responses[currentLanguage][emotion][0];
+  }
     
     conversationContext.userMood = emotion;
 }
@@ -162,8 +198,31 @@ function getSmartResponse(emotion, context) {
 }
 
 function detectEmotion(text, language) {
-  if (!responses[language]) language = 'en';
-   return analyzeSentiment(text);
+    if (!responses[language]) language = 'en';
+    
+    // إضافة هذا الكود الناقص:
+    const textLower = text.toLowerCase();
+    let detectedEmotion = null;
+    let maxMatches = 0;
+
+    for (const [emotion, words] of Object.entries(keywords[language])) {
+        let matches = 0;
+        for (const word of words) {
+            if (textLower.includes(word)) matches++;
+        }
+        if (matches > maxMatches) {
+            maxMatches = matches;
+            detectedEmotion = emotion;
+        }
+    }
+
+    if (!detectedEmotion) {
+        const emotions = Object.keys(responses[language]);
+        detectedEmotion = emotions[Math.floor(Math.random() * emotions.length)];
+    }
+
+    return detectedEmotion;
+}
 
   
     }
