@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderer: 'svg',
             loop: true,
             autoplay: true,
-            path: 'animation.json'
+            path: 'Background Full Screen-Night.json'
         });
     }
 
