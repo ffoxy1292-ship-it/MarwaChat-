@@ -101,12 +101,18 @@ let conversationContext = {
 };
 
 function analyzeSentiment(text) {
-    const sentimentWords = {
-        'سعيد': 2, 'فرح': 2, 'مبسوط': 2, 'مسرور': 2, 'رائع': 1.5,
-        'حزين': -2, 'تعيس': -2, 'زعلان': -2, 'غاضب': -2.5, 'منزعج': -2,
-        'مش': -1, 'لا': -1, 'مو': -1, 'ليس': -1,
-        'جداً': 1.5, 'جدا': 1.5, 'كثير': 1.3, 'مره': 1.3
-    };
+    const sentimentWords =  {
+    // الكلمات الجديدة
+    'فرحان': 2, 'مسرور': 2, 'سعيدة': 2, 'فرحة': 2,
+    'محبط': -2, 'متضايق': -1.5, 'منزعجة': -1.5, 'تعبة': -1.5, 'مرهق': -2,
+    'متفائل': 1.5, 'متحمس': 1.5, 'مندهش': 1.2, 'ممتن': 1.5,
+    
+    // الكلمات الأصلية
+    'سعيد': 2, 'فرح': 2, 'مبسوط': 2, 'رائع': 1.5,
+    'حزين': -2, 'تعيس': -2, 'زعلان': -2, 'غاضب': -2.5, 'منزعج': -2,
+    'مش': -1, 'لا': -1, 'مو': -1, 'ليس': -1,
+    'جداً': 1.5, 'جدا': 1.5, 'كثير': 1.3, 'مره': 1.3
+};
 
     let score = 0;
     let words = text.split(' ');
@@ -167,14 +173,12 @@ function getSmartResponse(emotion, context) {
         }
     };
 
-    if (!contextualResponses[emotion]) {
-        const possibleResponses = responses[currentLanguage][emotion] || responses[currentLanguage]['greeting'];
-        return possibleResponses[Math.floor(Math.random() * possibleResponses.length)];
-    }
-
+    
+    
     return contextualResponses[emotion]?.[context.currentTopic] 
         || contextualResponses[emotion]?.general
-        || responses[currentLanguage][emotion][0];
+        || responses[currentLanguage][emotion]?.[0]
+        || responses[currentLanguage]['greeting'][0];
 }
 
 function detectEmotion(text, language) {
