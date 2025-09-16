@@ -211,6 +211,21 @@ function rateResponse(responseText, rating) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  const button = document.getElementById('send-btn');
+    const lottieContainer = document.getElementById('lottie-bg');
+
+    function changeBackground() {
+        lottie.loadAnimation({
+            container: lottieContainer,
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            path: 'animation.json'
+        });
+    }
+
+    button.addEventListener('click', changeBackground, { once: true });
+
   document.getElementById('send-btn').addEventListener('click', sendMessage);
 
   document.getElementById('user-input').addEventListener('keypress', function(e) {
