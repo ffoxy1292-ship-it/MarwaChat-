@@ -165,14 +165,7 @@ function detectEmotion(text, language) {
   if (!responses[language]) language = 'en';
    return analyzeSentiment(text);
 
-  const textLower = text.toLowerCase();
-  let detectedEmotion = null;
-  let maxMatches = 0;
-
-  for (const [emotion, words] of Object.entries(keywords[language])) {
-    let matches = 0;
-    for (const word of words) {
-      if (textLower.includes(word)) matches++;
+  
     }
     if (matches > maxMatches) {
       maxMatches = matches;
