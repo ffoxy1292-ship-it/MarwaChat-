@@ -138,6 +138,8 @@ function updateConversationContext(text, emotion) {
         conversationContext.currentTopic = mentioned[0];
         conversationContext.mentionedTopics.push(...mentioned);
     }
+  conversationContext.userMood = emotion;
+};
   function getSmartResponse(emotion, context) {
     const contextualResponses = {
         sadness: {
@@ -178,25 +180,9 @@ function updateConversationContext(text, emotion) {
     conversationContext.userMood = emotion;
 }
 
-function getSmartResponse(emotion, context) {
-    const contextualResponses = {
-        sadness: {
-            work: "أتفهم ضغط العمل. هل تريدين نصيحة عملية لتخفيف التوتر؟",
-            study: "الدراسة ممكن تكون صعبة احياناً. أي مادة تعتبرينها الأصعب؟",
-            general: "أسمع حزنك في صوتك. تريدين تتكلمين عن الشيء المزعج؟"
-        },
-        happiness: {
-            work: "واو! يبدو أن العمل يمشي بشكل رائع اليوم! 💼✨",
-            study: "مبروك! إنجاز الدراسة شعور لا يوصف! 🎓🔥",
-            general: "فرحتي لفرحك! ايش الشيء الجميل اللي صار؟ 🌈"
-        }
-    };
 
-    return contextualResponses[emotion]?.[context.currentTopic] 
-        || contextualResponses[emotion]?.general
-        || responses[currentLanguage][emotion][0];
-}
 
+    
 function detectEmotion(text, language) {
     if (!responses[language]) language = 'en';
     
@@ -225,20 +211,7 @@ function detectEmotion(text, language) {
 }
 
   
-    }
-    if (matches > maxMatches) {
-      maxMatches = matches;
-      detectedEmotion = emotion;
-    }
-  }
-
-  if (!detectedEmotion) {
-    const emotions = Object.keys(responses[language]);
-    detectedEmotion = emotions[Math.floor(Math.random() * emotions.length)];
-  }
-
-  return detectedEmotion;
-}
+  
 
 function updatePlaceholder() {
   const inputField = document.getElementById('user-input');
@@ -319,7 +292,11 @@ function rateResponse(responseText, rating) {
     };
     
   let ratings = JSON.parse(localStorage.getItem('responseRatings') || '{}');
-  ratings[responseText] = rating;
+  ratings[responseText] = {
+    rating: rating,
+    context: contextData,
+    timestamp: Date.now()
+  };
   localStorage.setItem('responseRatings', JSON.stringify(ratings));
   
   // رسالة تأكيد بلغة المستخدم
