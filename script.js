@@ -32,12 +32,12 @@ const responses = {
     greeting: [
       "مرحباً! كيف حالك اليوم؟",
       "أهلاً وسهلاً! كيف تقضي يومك؟",
-      "مرحباً بك! كيف يمكنني مساعدتك اليوم؟"
+      "مرحباً بك! كيف يمكنني مساعدتك اليوم？"
     ], 
     weather: [
-      "الطقس جميل اليوم، أليس كذلك؟",
+      "الطقس جميل اليوم، أليس كذلك？",
       "أتمنى أن يكون الجو معتدلاً في منطقتك",
-      "الطقس يؤثر كثيراً على مزاجنا، كيف الطقس عندك؟"
+      "الطقس يؤثر كثيراً على مزاجنا، كيف الطقس عندك？"
     ] 
   }, 
   en: { 
@@ -99,6 +99,7 @@ let conversationContext = {
     userMood: 'neutral',
     mentionedTopics: []
 };
+
 function analyzeSentiment(text) {
     const sentimentWords = {
         'سعيد': 2, 'فرح': 2, 'مبسوط': 2, 'مسرور': 2, 'رائع': 1.5,
@@ -138,9 +139,10 @@ function updateConversationContext(text, emotion) {
         conversationContext.currentTopic = mentioned[0];
         conversationContext.mentionedTopics.push(...mentioned);
     }
-  conversationContext.userMood = emotion;
-};
-  function getSmartResponse(emotion, context) {
+    conversationContext.userMood = emotion;
+}
+
+function getSmartResponse(emotion, context) {
     const contextualResponses = {
         sadness: {
             work: "أتفهم ضغط العمل. هل تريدين نصيحة عملية لتخفيف التوتر؟",
@@ -152,21 +154,19 @@ function updateConversationContext(text, emotion) {
             study: "مبروك! إنجاز الدراسة شعور لا يوصف! 🎓🔥", 
             general: "فرحتي لفرحك! ايش الشيء الجميل اللي صار؟ 🌈"
         },
-        // أضيفي باقي المشاعر!
         anger: {
             work: "الشغل أحياناً يزعل. ايش اللي مزعجك بالضبط؟",
             study: "الدراسة ممكن تسبب عصبية. ايش المادة اللي تزعلك؟",
             general: "أسمع غضبك. تريدين تتكلمين عن اللي صار؟"
         },
         greeting: {
-            general: "أهلاً وسهلاً! كيف يمكنني مساعدتك اليوم؟ 🤗"
+            general: "أهلاً وسهلاً! كيف يمكنني مساعدتك اليوم？ 🤗"
         },
         weather: {
-            general: "الطقس جميل اليوم، أليس كذلك؟ ☀️"
+            general: "الطقس جميل اليوم، أليس كذلك？ ☀️"
         }
     };
 
-    // إذا مافي رد سياقي، استخدمي النظام القديم
     if (!contextualResponses[emotion]) {
         const possibleResponses = responses[currentLanguage][emotion] || responses[currentLanguage]['greeting'];
         return possibleResponses[Math.floor(Math.random() * possibleResponses.length)];
@@ -175,18 +175,11 @@ function updateConversationContext(text, emotion) {
     return contextualResponses[emotion]?.[context.currentTopic] 
         || contextualResponses[emotion]?.general
         || responses[currentLanguage][emotion][0];
-  }
-    
-    conversationContext.userMood = emotion;
 }
 
-
-
-    
 function detectEmotion(text, language) {
     if (!responses[language]) language = 'en';
     
-    // إضافة هذا الكود الناقص:
     const textLower = text.toLowerCase();
     let detectedEmotion = null;
     let maxMatches = 0;
@@ -210,110 +203,97 @@ function detectEmotion(text, language) {
     return detectedEmotion;
 }
 
-  
-  
-
 function updatePlaceholder() {
-  const inputField = document.getElementById('user-input');
-  inputField.placeholder = placeholders[currentLanguage] || placeholders['en'];
+    const inputField = document.getElementById('user-input');
+    inputField.placeholder = placeholders[currentLanguage] || placeholders['en'];
 }
 
 function sendMessage() {
-  const userInput = document.getElementById('user-input').value.trim();
-  
-  if (!userInput) return;
-  
-  // حفظ الرسالة في الذاكرة
-  conversationHistory.push(userInput);
-  if (conversationHistory.length > 5) conversationHistory.shift(); // احتفظي بآخر 5 رسائل فقط
-
-  const chatContainer = document.getElementById('chat-container');
-  const userMsg = document.createElement('div');
-  userMsg.className = 'message user-message';
-  userMsg.textContent = userInput;
-  chatContainer.appendChild(userMsg);
-
-  document.getElementById('user-input').value = '';
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-
-  const typingIndicator = document.getElementById('typing-indicator');
-  typingIndicator.style.display = 'flex';
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-
-  const typingTime = Math.min(3000, Math.max(1000, userInput.length * 50));
-
-  setTimeout(() => {
-    typingIndicator.style.display = 'none';
+    const userInput = document.getElementById('user-input').value.trim();
     
-    const contextText = conversationHistory.join(' ');
-    const emotion = analyzeSentiment(contextText);
-    updateConversationContext(userInput, emotion);
-    const smartResponse = getSmartResponse(emotion, conversationContext);
+    if (!userInput) return;
     
-    const botMsg = document.createElement('div');
-    botMsg.className = 'message bot-message';
-    botMsg.textContent = smartResponse;
+    conversationHistory.push(userInput);
+    if (conversationHistory.length > 5) conversationHistory.shift();
 
-    // إنشاء عنصر لحاوية أزرار التقييم
-    const feedbackDiv = document.createElement('div');
-    feedbackDiv.className = 'feedback-buttons';
-    
-    // استخدام data attributes بدلاً من نص JavaScript في innerHTML
-    feedbackDiv.innerHTML = `
-      <button class="feedback-btn" data-response="${encodeURIComponent(smartResponse)}" data-rating="good">👍</button>
-      <button class="feedback-btn" data-response="${encodeURIComponent(smartResponse)}" data-rating="bad">👎</button>
-    `;
-    
-    // إضافة event listeners للأزرار
-    feedbackDiv.querySelectorAll('.feedback-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const response = decodeURIComponent(this.getAttribute('data-response'));
-        const rating = this.getAttribute('data-rating');
-        rateResponse(response, rating);
-      });
-    });
+    const chatContainer = document.getElementById('chat-container');
+    const userMsg = document.createElement('div');
+    userMsg.className = 'message user-message';
+    userMsg.textContent = userInput;
+    chatContainer.appendChild(userMsg);
 
-    // إضافة الأزرار إلى رسالة البوت
-    botMsg.appendChild(feedbackDiv);
-
-    // ثم إضافة الرسالة إلى الدردشة
-    chatContainer.appendChild(botMsg);
+    document.getElementById('user-input').value = '';
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
-  }, typingTime);
+    const typingIndicator = document.getElementById('typing-indicator');
+    typingIndicator.style.display = 'flex';
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    const typingTime = Math.min(3000, Math.max(1000, userInput.length * 50));
+
+    setTimeout(() => {
+        typingIndicator.style.display = 'none';
+        
+        const contextText = conversationHistory.join(' ');
+        const emotion = analyzeSentiment(contextText);
+        updateConversationContext(userInput, emotion);
+        const smartResponse = getSmartResponse(emotion, conversationContext);
+        
+        const botMsg = document.createElement('div');
+        botMsg.className = 'message bot-message';
+        botMsg.textContent = smartResponse;
+
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = 'feedback-buttons';
+        
+        feedbackDiv.innerHTML = `
+            <button class="feedback-btn" data-response="${encodeURIComponent(smartResponse)}" data-rating="good">👍</button>
+            <button class="feedback-btn" data-response="${encodeURIComponent(smartResponse)}" data-rating="bad">👎</button>
+        `;
+        
+        feedbackDiv.querySelectorAll('.feedback-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const response = decodeURIComponent(this.getAttribute('data-response'));
+                const rating = this.getAttribute('data-rating');
+                rateResponse(response, rating);
+            });
+        });
+
+        botMsg.appendChild(feedbackDiv);
+        chatContainer.appendChild(botMsg);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }, typingTime);
 }
 
 function rateResponse(responseText, rating) {
-  // احفظي التقييم في localStorage
-  const contextData = {
+    const contextData = {
         userInput: conversationHistory[conversationHistory.length - 1],
         emotion: conversationContext.userMood,
         topic: conversationContext.currentTopic
     };
     
-  let ratings = JSON.parse(localStorage.getItem('responseRatings') || '{}');
-  ratings[responseText] = {
-    rating: rating,
-    context: contextData,
-    timestamp: Date.now()
-  };
-  localStorage.setItem('responseRatings', JSON.stringify(ratings));
-  
-  // رسالة تأكيد بلغة المستخدم
-  const thankYouMessages = {
-    ar: 'شكرًا للتقييم! ستتحسن ردودي بناءً على ملاحظاتك.',
-    en: 'Thank you for your feedback! I will improve my responses based on your input.',
-    es: '¡Gracias por tu comentario! Mejoraré mis respuestas basándome en tu opinión.',
-    fr: 'Merci pour votre commentaire ! J\'améliorerai mes réponses en fonction de votre avis.',
-    hi: 'आपके फीडबैक के लिए धन्यवाद! मैं आपके इनपुट के आधार पर अपनी प्रतिक्रियाओं में सुधार करूंगा।',
-    tl: 'Salamat sa iyong feedback! Pagbutihin ko ang aking mga tugon batay sa iyong input.'
-  };
-  
-  alert(thankYouMessages[currentLanguage] || thankYouMessages['en']);
+    let ratings = JSON.parse(localStorage.getItem('responseRatings') || '{}');
+    ratings[responseText] = {
+        rating: rating,
+        context: contextData,
+        timestamp: Date.now()
+    };
+    localStorage.setItem('responseRatings', JSON.stringify(ratings));
+    
+    const thankYouMessages = {
+        ar: 'شكرًا للتقييم! ستتحسن ردودي بناءً على ملاحظاتك.',
+        en: 'Thank you for your feedback! I will improve my responses based on your input.',
+        es: '¡Gracias por tu comentario! Mejoraré mis respuestas basándome en tu opinión.',
+        fr: 'Merci pour votre commentaire ! J\'améliorerai mes réponses en fonction de votre avis.',
+        hi: 'आपके फीडबैक के लिए धन्यवाद! मैं आपके इनपुट के आधार पर अपनी प्रतिक्रियाओं में सुधार करूंगा।',
+        tl: 'Salamat sa iyong feedback! Pagbutihin ko ang aking mga tugon batay sa iyong input.'
+    };
+    
+    alert(thankYouMessages[currentLanguage] || thankYouMessages['en']);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  const button = document.getElementById('send-btn');
+    const button = document.getElementById('send-btn');
     const lottieContainer = document.getElementById('lottie-bg');
 
     function changeBackground() {
@@ -327,22 +307,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     button.addEventListener('click', changeBackground, { once: true });
+    document.getElementById('send-btn').addEventListener('click', sendMessage);
 
-  document.getElementById('send-btn').addEventListener('click', sendMessage);
-
-  document.getElementById('user-input').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') sendMessage();
-  });
-
-  document.querySelectorAll('.lang-btn').forEach(button => {
-    button.addEventListener('click', function() {
-      document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
-      this.classList.add('active');
-      currentLanguage = this.getAttribute('data-lang');
-      updatePlaceholder(); // تحديث placeholder عند تغيير اللغة
+    document.getElementById('user-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') sendMessage();
     });
-  });
-  
-  // تهيئة placeholder عند تحميل الصفحة
-  updatePlaceholder();
+
+    document.querySelectorAll('.lang-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            currentLanguage = this.getAttribute('data-lang');
+            updatePlaceholder();
+        });
+    });
+    
+    updatePlaceholder();
 });
