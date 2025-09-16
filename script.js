@@ -94,9 +94,76 @@ const placeholders = {
 
 let conversationHistory = [];
 let currentLanguage = 'ar';
+let conversationContext = {
+    currentTopic: '',
+    userMood: 'neutral',
+    mentionedTopics: []
+};
+function analyzeSentiment(text) {
+    const sentimentWords = {
+        'سعيد': 2, 'فرح': 2, 'مبسوط': 2, 'مسرور': 2, 'رائع': 1.5,
+        'حزين': -2, 'تعيس': -2, 'زعلان': -2, 'غاضب': -2.5, 'منزعج': -2,
+        'مش': -1, 'لا': -1, 'مو': -1, 'ليس': -1,
+        'جداً': 1.5, 'جدا': 1.5, 'كثير': 1.3, 'مره': 1.3
+    };
+
+    let score = 0;
+    let words = text.split(' ');
+    let modifier = 1;
+
+    words.forEach(word => {
+        word = word.toLowerCase().replace(/[.,!?;:]$/, '');
+        
+        if (sentimentWords[word] !== undefined) {
+            if (Math.abs(sentimentWords[word]) === 1) {
+                modifier *= sentimentWords[word];
+            } else {
+                score += sentimentWords[word] * modifier;
+                modifier = 1;
+            }
+        }
+    });
+
+    if (score > 1) return 'happiness';
+    if (score < -1) return 'sadness';
+    if (score < -2) return 'anger';
+    return Math.random() > 0.5 ? 'greeting' : 'neutral';
+}
+
+function updateConversationContext(text, emotion) {
+    const topics = ['عمل', 'دراسة', 'عائلة', 'أصدقاء', 'صحة'];
+    const mentioned = topics.filter(topic => text.includes(topic));
+    
+    if (mentioned.length > 0) {
+        conversationContext.currentTopic = mentioned[0];
+        conversationContext.mentionedTopics.push(...mentioned);
+    }
+    
+    conversationContext.userMood = emotion;
+}
+
+function getSmartResponse(emotion, context) {
+    const contextualResponses = {
+        sadness: {
+            work: "أتفهم ضغط العمل. هل تريدين نصيحة عملية لتخفيف التوتر؟",
+            study: "الدراسة ممكن تكون صعبة احياناً. أي مادة تعتبرينها الأصعب؟",
+            general: "أسمع حزنك في صوتك. تريدين تتكلمين عن الشيء المزعج؟"
+        },
+        happiness: {
+            work: "واو! يبدو أن العمل يمشي بشكل رائع اليوم! 💼✨",
+            study: "مبروك! إنجاز الدراسة شعور لا يوصف! 🎓🔥",
+            general: "فرحتي لفرحك! ايش الشيء الجميل اللي صار؟ 🌈"
+        }
+    };
+
+    return contextualResponses[emotion]?.[context.currentTopic] 
+        || contextualResponses[emotion]?.general
+        || responses[currentLanguage][emotion][0];
+}
 
 function detectEmotion(text, language) {
   if (!responses[language]) language = 'en';
+   return analyzeSentiment(text);
 
   const textLower = text.toLowerCase();
   let detectedEmotion = null;
@@ -153,14 +220,14 @@ function sendMessage() {
   setTimeout(() => {
     typingIndicator.style.display = 'none';
     
-    const contextText = conversationHistory.join(' '); // اجمعي آخر 5 رسائل
-    const emotion = detectEmotion(contextText, currentLanguage); // حلليهم معًا
-    const possibleResponses = responses[currentLanguage][emotion] || responses[currentLanguage]['greeting'];
-    const randomResponse = possibleResponses[Math.floor(Math.random() * possibleResponses.length)];
-
+    const contextText = conversationHistory.join(' ');
+    const emotion = analyzeSentiment(contextText);
+    updateConversationContext(userInput, emotion);
+    const smartResponse = getSmartResponse(emotion, conversationContext);
+    
     const botMsg = document.createElement('div');
     botMsg.className = 'message bot-message';
-    botMsg.textContent = randomResponse;
+    botMsg.textContent = smartResponse;
 
     // إنشاء عنصر لحاوية أزرار التقييم
     const feedbackDiv = document.createElement('div');
@@ -168,8 +235,8 @@ function sendMessage() {
     
     // استخدام data attributes بدلاً من نص JavaScript في innerHTML
     feedbackDiv.innerHTML = `
-      <button class="feedback-btn" data-response="${encodeURIComponent(randomResponse)}" data-rating="good">👍</button>
-      <button class="feedback-btn" data-response="${encodeURIComponent(randomResponse)}" data-rating="bad">👎</button>
+      <button class="feedback-btn" data-response="${encodeURIComponent(smartResponse)}" data-rating="good">👍</button>
+      <button class="feedback-btn" data-response="${encodeURIComponent(smartResponse)}" data-rating="bad">👎</button>
     `;
     
     // إضافة event listeners للأزرار
@@ -193,6 +260,12 @@ function sendMessage() {
 
 function rateResponse(responseText, rating) {
   // احفظي التقييم في localStorage
+  const contextData = {
+        userInput: conversationHistory[conversationHistory.length - 1],
+        emotion: conversationContext.userMood,
+        topic: conversationContext.currentTopic
+    };
+    
   let ratings = JSON.parse(localStorage.getItem('responseRatings') || '{}');
   ratings[responseText] = rating;
   localStorage.setItem('responseRatings', JSON.stringify(ratings));
