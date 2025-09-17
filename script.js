@@ -1,4 +1,16 @@
 let responses = {}; // فارغ بالبداية
+let conversationHistory = [];
+let currentLanguage = 'ar';
+let conversationContext = {
+    currentTopic: '',
+    userMood: 'neutral',
+    mentionedTopics: []
+};
+
+const placeholders = {
+    ar: 'اكتب رسالتك هنا...',
+    en: 'Type your message here...'
+};
 
 async function loadResponses() {
     try {
@@ -10,8 +22,12 @@ async function loadResponses() {
     }
 }
 
-// استدعيها عند بدء التطبيق
-loadResponses();
+async function initChat() {
+    await loadResponses();
+    updatePlaceholder();
+}
+
+document.addEventListener('DOMContentLoaded', initChat);
 
 // ====================== تحليل المشاعر ======================
 function analyzeSentiment(text) {
@@ -58,12 +74,6 @@ function analyzeSentiment(text) {
 }
 
 // ====================== تحديث سياق المحادثة ======================
-let conversationContext = {
-    currentTopic: '',
-    userMood: 'neutral',
-    mentionedTopics: []
-};
-
 function updateConversationContext(text, emotion) {
     const topics = ['عمل', 'دراسة', 'عائلة', 'أصدقاء', 'صحة', 'شعر', 'نصائح', 'تنظيم'];
     const mentioned = topics.filter(topic => text.includes(topic));
@@ -81,12 +91,6 @@ function getRandomResponse(emotion) {
     const choices = responses[currentLanguage][emotion];
     return choices[Math.floor(Math.random() * choices.length)];
 }
-
-// ====================== placeholders ======================
-const placeholders = {
-    ar: 'اكتب رسالتك هنا...',
-    en: 'Type your message here...'
-};
 
 function updatePlaceholder() {
     const inputField = document.getElementById('user-input');
@@ -178,18 +182,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const lottieContainer = document.getElementById('lottie-bg');
 
     // شغّل الخلفية مرة واحدة فقط
-    lottie.loadAnimation({
-        container: lottieContainer,
-        renderer: 'svg',
-        loop: true,
-        autoplay: true,
-        path: 'Background Full Screen-Night.json'
-    });
+    if (lottieContainer && typeof lottie !== 'undefined') {
+        lottie.loadAnimation({
+            container: lottieContainer,
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            path: 'Background Full Screen-Night.json'
+        });
+    }
 
-    button.addEventListener('click', sendMessage);
-    document.getElementById('user-input').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') sendMessage();
-    });
+    if (button) {
+        button.addEventListener('click', sendMessage);
+    }
+    
+    const userInput = document.getElementById('user-input');
+    if (userInput) {
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+    }
 
     document.querySelectorAll('.lang-btn').forEach(button => {
         button.addEventListener('click', function() {
