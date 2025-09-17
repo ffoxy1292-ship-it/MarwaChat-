@@ -25,6 +25,7 @@ async function loadResponses() {
 async function initChat() {
     await loadResponses();
     updatePlaceholder();
+    setupEventListeners(); // إضافة هذا السطر المهم
 }
 
 document.addEventListener('DOMContentLoaded', initChat);
@@ -94,38 +95,76 @@ function getRandomResponse(emotion) {
 
 function updatePlaceholder() {
     const inputField = document.getElementById('user-input');
-    inputField.placeholder = placeholders[currentLanguage] || placeholders['en'];
+    if (inputField) {
+        inputField.placeholder = placeholders[currentLanguage] || placeholders['en'];
+    }
+}
+
+// ====================== إعداد مستمعي الأحداث ======================
+function setupEventListeners() {
+    const button = document.getElementById('send-btn');
+    const userInput = document.getElementById('user-input');
+    
+    if (button) {
+        button.addEventListener('click', sendMessage);
+    }
+    
+    if (userInput) {
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    }
+
+    document.querySelectorAll('.lang-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            currentLanguage = this.getAttribute('data-lang');
+            updatePlaceholder();
+        });
+    });
 }
 
 // ====================== إرسال الرسالة ======================
 function sendMessage() {
-    const userInput = document.getElementById('user-input').value.trim();
+    const userInput = document.getElementById('user-input');
     if (!userInput) return;
+    
+    const userText = userInput.value.trim();
+    if (!userText) return;
 
-    conversationHistory.push(userInput);
+    conversationHistory.push(userText);
     if (conversationHistory.length > 5) conversationHistory.shift();
 
     const chatContainer = document.getElementById('chat-container');
+    if (!chatContainer) return;
+    
     const userMsg = document.createElement('div');
     userMsg.className = 'message user-message';
-    userMsg.textContent = userInput;
+    userMsg.textContent = userText;
     chatContainer.appendChild(userMsg);
 
-    document.getElementById('user-input').value = '';
+    userInput.value = '';
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
     const typingIndicator = document.getElementById('typing-indicator');
-    typingIndicator.style.display = 'flex';
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    if (typingIndicator) {
+        typingIndicator.style.display = 'flex';
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
 
-    const typingTime = Math.min(3000, Math.max(1000, userInput.length * 50));
+    const typingTime = Math.min(3000, Math.max(1000, userText.length * 50));
 
     setTimeout(() => {
-        typingIndicator.style.display = 'none';
+        if (typingIndicator) {
+            typingIndicator.style.display = 'none';
+        }
 
         const contextText = conversationHistory.join(' ');
         const emotion = analyzeSentiment(contextText);
-        updateConversationContext(userInput, emotion);
+        updateConversationContext(userText, emotion);
         const smartResponse = getRandomResponse(emotion);
 
         const botMsg = document.createElement('div');
@@ -178,7 +217,6 @@ function rateResponse(responseText, rating) {
 
 // ====================== DOMContentLoaded ======================
 document.addEventListener('DOMContentLoaded', function() {
-    const button = document.getElementById('send-btn');
     const lottieContainer = document.getElementById('lottie-bg');
 
     // شغّل الخلفية مرة واحدة فقط
@@ -191,26 +229,6 @@ document.addEventListener('DOMContentLoaded', function() {
             path: 'Background Full Screen-Night.json'
         });
     }
-
-    if (button) {
-        button.addEventListener('click', sendMessage);
-    }
-    
-    const userInput = document.getElementById('user-input');
-    if (userInput) {
-        userInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') sendMessage();
-        });
-    }
-
-    document.querySelectorAll('.lang-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            currentLanguage = this.getAttribute('data-lang');
-            updatePlaceholder();
-        });
-    });
     
     updatePlaceholder();
 });
