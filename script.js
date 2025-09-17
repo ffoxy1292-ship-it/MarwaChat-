@@ -101,39 +101,62 @@ let conversationContext = {
 };
 
 function analyzeSentiment(text) {
-    const sentimentWords =  {
-    // الكلمات الجديدة
-    'فرحان': 2, 'مسرور': 2, 'سعيدة': 2, 'فرحة': 2,
-    'محبط': -2, 'متضايق': -1.5, 'منزعجة': -1.5, 'تعبة': -1.5, 'مرهق': -2,
-    'متفائل': 1.5, 'متحمس': 1.5, 'مندهش': 1.2, 'ممتن': 1.5,
-    
-    // الكلمات الأصلية
-    'سعيد': 2, 'فرح': 2, 'مبسوط': 2, 'رائع': 1.5,
-    'حزين': -2, 'تعيس': -2, 'زعلان': -2, 'غاضب': -2.5, 'منزعج': -2,
-    'مش': -1, 'لا': -1, 'مو': -1, 'ليس': -1,
-    'جداً': 1.5, 'جدا': 1.5, 'كثير': 1.3, 'مره': 1.3
-};
+const sentimentWords = {  
+  "فرحان": 2, "مسرور": 2, "سعيدة": 2, "فرحة": 2,  
+  "محبط": -2, "متضايق": -1.5, "منزعجة": -1.5, "تعبة": -1.5, "مرهق": -2,  
+  "متفائل": 1.5, "متحمس": 1.5, "مندهش": 1.2, "ممتن": 1.5,  
+  "سعيد": 2, "فرح": 2, "مبسوط": 2, "رائع": 1.5,  
+  "حزين": -2, "تعيس": -2, "زعلان": -2, "غاضب": -2.5, "منزعج": -2  
+};  
 
-    let score = 0;
-    let words = text.split(' ');
-    let modifier = 1;
+const modifiers = {  
+  "جداً": 1.5,  
+  "مرة": 1.5,  
+  "مره": 2,   // ← صححتها هنا  
+  "شوي": 0.5,  
+  "قليلاً": 0.5  
+};  
 
-    words.forEach(word => {
-        word = word.toLowerCase().replace(/[.,!?;:]$/, '');
+  const words = text.split(" ");  
+  let score = 0;  
+  let negation = false;  
+
+  for (let i = 0; i < words.length; i++) {
+    let word = words[i];
+
+    // تحقق من النفي
+    if (["مو", "ما", "مش", "ليس", "لست"].includes(word)) {
+      negation = true;
+      continue; // نكمل للكلمة اللي بعدها
+    }
+
+    // تحقق من وجود الكلمة في القاموس
+    if (sentimentWords[word] !== undefined) {
+      let value = sentimentWords[word];
+
+      // قلب المعنى لو فيه نفي
+      if (negation) {
+        value = value * -1;
+        negation = false;
+      }
+
+      // تحقق من الكلمة اللي بعدها (مضاعف أو مخفف)
+      let nextWord = words[i + 1];
+      if (nextWord && modifiers[nextWord] !== undefined) {
+        value = value * modifiers[nextWord];
+      }
+
+      score += value;
+    }
+  }
+
+ 
         
-        if (sentimentWords[word] !== undefined) {
-            if (Math.abs(sentimentWords[word]) === 1) {
-                modifier *= sentimentWords[word];
-            } else {
-                score += sentimentWords[word] * modifier;
-                modifier = 1;
-            }
-        }
-    });
+
 
     if (score > 1) return 'happiness';
-    if (score < -1) return 'sadness';
     if (score < -2) return 'anger';
+    if (score < -1) return 'sadness';
     return Math.random() > 0.5 ? 'greeting' : 'neutral';
 }
 
