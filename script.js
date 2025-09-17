@@ -16,7 +16,7 @@ const placeholders = {
     tl: 'I-type ang iyong mensahe dito...'
 };
 
-// إضافة كلمات المشاعر للغات الأخرى
+// كلمات المشاعر مع قيمها (يجب أن تكون خارج الدالة)
 const sentimentWords = {
     // العربية
     "فرحان": 2, "مسرور": 2, "سعيدة": 2, "فرحة": 2,  
@@ -67,7 +67,7 @@ const negationWords = [
     "non", "ne", "pas", "jamais",
     "नहीं", "मत", "ना",
     "hindi", "ayaw", "huwag"
-];
+};
 
 async function loadResponses() {
     try {
@@ -113,23 +113,30 @@ async function initChat() {
 document.addEventListener('DOMContentLoaded', initChat);
 
 function analyzeSentiment(text) {
+    console.log("تحليل المشاعر للنص:", text);
     let score = 0;  
     let negation = false;  
     const words = text.split(/\s+/);
+    console.log("الكلمات المستخرجة:", words);
 
     for (let i = 0; i < words.length; i++) {
         let word = words[i].toLowerCase().replace(/[.,!?;:]$/, '');
+        console.log("معالجة الكلمة:", word);
         
         if (negationWords.includes(word)) {
+            console.log("كلمة نفي:", word);
             negation = true;
             continue;
         }
         
         if (sentimentWords[word] !== undefined) {
             let value = sentimentWords[word];
+            console.log("كلمة مشاعر:", word, "القيمة:", value);
+            
             if (negation) {
                 value = value * -1;
                 negation = false;
+                console.log("تطبيق النفي، القيمة الجديدة:", value);
             }
             
             // التحقق من وجود معدل في الكلمة التالية
@@ -137,13 +144,17 @@ function analyzeSentiment(text) {
                 let nextWord = words[i + 1].toLowerCase().replace(/[.,!?;:]$/, '');
                 if (modifiers[nextWord] !== undefined) {
                     value *= modifiers[nextWord];
+                    console.log("تطبيق المعدل:", nextWord, "القيمة الجديدة:", value);
                 }
             }
             
             score += value;
+            console.log("النتيجة الحالية:", score);
         }
     }
 
+    console.log("النتيجة النهائية:", score);
+    
     if (score > 1) return 'happiness';
     if (score < -2) return 'anger';
     if (score < -1) return 'sadness';
@@ -174,6 +185,10 @@ function updateConversationContext(text, emotion) {
 }
 
 function getRandomResponse(emotion) {
+    console.log("العاطفة المحددة:", emotion);
+    console.log("اللغة الحالية:", currentLanguage);
+    console.log("الردود المتاحة:", responses[currentLanguage]);
+    
     if (!responses[currentLanguage]) {
         return currentLanguage === 'ar' ? 
             "عذراً، لا تتوفر ردود بلغتك حالياً." : 
@@ -181,6 +196,7 @@ function getRandomResponse(emotion) {
     }
     
     if (!responses[currentLanguage][emotion]) {
+        console.log("لا توجد ردود للعاطفة:", emotion);
         // إذا لم يكن هناك ردود للمشاعر المحددة، استخدم الردود المحايدة
         if (responses[currentLanguage]['neutral']) {
             const neutralChoices = responses[currentLanguage]['neutral'];
@@ -193,6 +209,7 @@ function getRandomResponse(emotion) {
     }
     
     const choices = responses[currentLanguage][emotion];
+    console.log("الاختيارات المتاحة:", choices);
     return choices[Math.floor(Math.random() * choices.length)];
 }
 
@@ -293,6 +310,9 @@ function sendMessage() {
 
         const contextText = conversationHistory.join(' ');
         const emotion = analyzeSentiment(contextText);
+        console.log("النص الكامل:", contextText);
+        console.log("العاطفة المكتشفة:", emotion);
+        
         updateConversationContext(userText, emotion);
         const smartResponse = getRandomResponse(emotion);
 
