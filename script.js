@@ -1,4 +1,4 @@
-let responses = {}; // فارغ بالبداية
+let responses = {};
 let conversationHistory = [];
 let currentLanguage = 'ar';
 let conversationContext = {
@@ -9,61 +9,137 @@ let conversationContext = {
 
 const placeholders = {
     ar: 'اكتب رسالتك هنا...',
-    en: 'Type your message here...'
+    en: 'Type your message here...',
+    es: 'Escribe tu mensaje aquí...',
+    fr: 'Écrivez votre message ici...',
+    hi: 'अपना संदेश यहाँ लिखें...',
+    tl: 'I-type ang iyong mensahe dito...'
 };
+
+// إضافة كلمات المشاعر للغات الأخرى
+const sentimentWords = {
+    // العربية
+    "فرحان": 2, "مسرور": 2, "سعيدة": 2, "فرحة": 2,  
+    "محبط": -2, "متضايق": -1.5, "منزعجة": -1.5, "تعبة": -1.5, "مرهق": -2,  
+    "متفائل": 1.5, "متحمس": 1.5, "مندهش": 1.2, "ممتن": 1.5,  
+    "سعيد": 2, "فرح": 2, "مبسوط": 2, "رائع": 1.5,  
+    "حزين": -2, "تعيس": -2, "زعلان": -2, "غاضب": -2.5, "منزعج": -2,
+    
+    // الإنجليزية
+    "happy": 2, "excited": 2, "joy": 2, "great": 1.5, "good": 1,
+    "sad": -2, "angry": -2.5, "tired": -1.5, "upset": -2, "bad": -1.5,
+    "love": 2.5, "hate": -2.5, "wonderful": 2, "terrible": -2,
+    
+    // الإسبانية
+    "feliz": 2, "alegre": 2, "emocionado": 2, "contento": 1.5,
+    "triste": -2, "enojado": -2.5, "cansado": -1.5, "molesto": -2,
+    "encantado": 2, "enfadado": -2,
+    
+    // الفرنسية
+    "heureux": 2, "joyeux": 2, "excité": 2, "content": 1.5,
+    "triste": -2, "fatigué": -1.5, "fâché": -2.5, "énervé": -2,
+    "ravi": 2, "mécontent": -2,
+    
+    // الهندية
+    "खुश": 2, "उत्साहित": 2, "आनंदित": 2, "शानदार": 1.5,
+    "दुखी": -2, "थका": -1.5, "गुस्सा": -2.5, "परेशान": -2,
+    "प्यार": 2.5, "नफरत": -2.5,
+    
+    // التاغالوغية
+    "masaya": 2, "saya": 2, "tuwa": 2, "galak": 1.5,
+    "malungkot": -2, "pagod": -1.5, "galit": -2.5, "inis": -2,
+    "mahal": 2.5, "poot": -2.5
+};
+
+const modifiers = {  
+    "جداً": 1.5, "مرة": 1.5, "مره": 2, "شوي": 0.5, "قليلاً": 0.5,
+    "very": 1.5, "so": 1.5, "a bit": 0.5, "little": 0.5,
+    "muy": 1.5, "bastante": 1.2, "poco": 0.5,
+    "très": 1.5, "assez": 1.2, "peu": 0.5,
+    "बहुत": 1.5, "थोड़ा": 0.5,
+    "napaka": 1.5, "medyo": 1.2, "kaunti": 0.5
+};
+
+const negationWords = [
+    "مو", "ما", "مش", "ليس", "لست", "لا", "ليس", 
+    "not", "no", "don't", "isn't", "aren't",
+    "no", "tampoco", "nunca",
+    "non", "ne", "pas", "jamais",
+    "नहीं", "मत", "ना",
+    "hindi", "ayaw", "huwag"
+];
 
 async function loadResponses() {
     try {
-        const res = await fetch('responses.json'); // مسار ملف JSON
+        const res = await fetch('responses.json');
         responses = await res.json();
-        console.log('Responses loaded successfully');
+        console.log('تم تحميل الردود بنجاح');
+        
+        // التحقق من وجود جميع اللغات في الملف
+        const availableLanguages = Object.keys(responses);
+        console.log('اللغات المتاحة:', availableLanguages);
+        
+        // تعطيل أزرار اللغات غير المتوفرة
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            const lang = btn.getAttribute('data-lang');
+            if (!availableLanguages.includes(lang)) {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.title = 'هذه اللغة غير متوفرة';
+            }
+        });
     } catch (err) {
-        console.error('Error loading responses.json:', err);
+        console.error('خطأ في تحميل responses.json:', err);
+        // استخدام ردود افتراضية بسيطة كاحتياطي
+        responses = {
+            ar: { 
+                greeting: ["مرحباً! كيف يمكنني مساعدتك؟"],
+                neutral: ["أخبرني المزيد عن ذلك"]
+            },
+            en: { 
+                greeting: ["Hello! How can I help you?"],
+                neutral: ["Tell me more about that"]
+            }
+        };
     }
 }
 
 async function initChat() {
     await loadResponses();
     updatePlaceholder();
-    setupEventListeners(); // إضافة هذا السطر المهم
+    setupEventListeners();
 }
 
 document.addEventListener('DOMContentLoaded', initChat);
 
-// ====================== تحليل المشاعر ======================
 function analyzeSentiment(text) {
-    const sentimentWords = {  
-        "فرحان": 2, "مسرور": 2, "سعيدة": 2, "فرحة": 2,  
-        "محبط": -2, "متضايق": -1.5, "منزعجة": -1.5, "تعبة": -1.5, "مرهق": -2,  
-        "متفائل": 1.5, "متحمس": 1.5, "مندهش": 1.2, "ممتن": 1.5,  
-        "سعيد": 2, "فرح": 2, "مبسوط": 2, "رائع": 1.5,  
-        "حزين": -2, "تعيس": -2, "زعلان": -2, "غاضب": -2.5, "منزعج": -2  
-    };  
-
-    const modifiers = {  
-        "جداً": 1.5, "مرة": 1.5, "مره": 2, "شوي": 0.5, "قليلاً": 0.5  
-    };  
-
-    const words = text.split(" ");  
     let score = 0;  
     let negation = false;  
+    const words = text.split(/\s+/);
 
     for (let i = 0; i < words.length; i++) {
-        let word = words[i];
-        if (["مو", "ما", "مش", "ليس", "لست"].includes(word)) {
+        let word = words[i].toLowerCase().replace(/[.,!?;:]$/, '');
+        
+        if (negationWords.includes(word)) {
             negation = true;
             continue;
         }
+        
         if (sentimentWords[word] !== undefined) {
             let value = sentimentWords[word];
             if (negation) {
                 value = value * -1;
                 negation = false;
             }
-            let nextWord = words[i + 1];
-            if (nextWord && modifiers[nextWord] !== undefined) {
-                value *= modifiers[nextWord];
+            
+            // التحقق من وجود معدل في الكلمة التالية
+            if (i + 1 < words.length) {
+                let nextWord = words[i + 1].toLowerCase().replace(/[.,!?;:]$/, '');
+                if (modifiers[nextWord] !== undefined) {
+                    value *= modifiers[nextWord];
+                }
             }
+            
             score += value;
         }
     }
@@ -71,24 +147,51 @@ function analyzeSentiment(text) {
     if (score > 1) return 'happiness';
     if (score < -2) return 'anger';
     if (score < -1) return 'sadness';
+    if (score === 0) return 'neutral';
     return Math.random() > 0.5 ? 'greeting' : 'neutral';
 }
 
-// ====================== تحديث سياق المحادثة ======================
 function updateConversationContext(text, emotion) {
-    const topics = ['عمل', 'دراسة', 'عائلة', 'أصدقاء', 'صحة', 'شعر', 'نصائح', 'تنظيم'];
-    const mentioned = topics.filter(topic => text.includes(topic));
+    const topics = {
+        ar: ['عمل', 'دراسة', 'عائلة', 'أصدقاء', 'صحة', 'شعر', 'نصائح', 'تنظيم'],
+        en: ['work', 'study', 'family', 'friends', 'health', 'poetry', 'advice', 'organization'],
+        es: ['trabajo', 'estudio', 'familia', 'amigos', 'salud', 'poesía', 'consejos', 'organización'],
+        fr: ['travail', 'étude', 'famille', 'amis', 'santé', 'poésie', 'conseils', 'organisation'],
+        hi: ['काम', 'अध्ययन', 'परिवार', 'दोस्त', 'स्वास्थ्य', 'कविता', 'सलाह', 'संगठन'],
+        tl: ['trabaho', 'pag-aaral', 'pamilya', 'kaibigan', 'kalusugan', 'tula', 'payo', 'organisasyon']
+    };
+
+    const currentTopics = topics[currentLanguage] || topics['ar'];
+    const mentioned = currentTopics.filter(topic => text.toLowerCase().includes(topic.toLowerCase()));
+    
     if (mentioned.length > 0) {
         conversationContext.currentTopic = mentioned[0];
-        conversationContext.mentionedTopics.push(...mentioned);
+        if (!conversationContext.mentionedTopics.includes(mentioned[0])) {
+            conversationContext.mentionedTopics.push(mentioned[0]);
+        }
     }
     conversationContext.userMood = emotion;
 }
 
-// ====================== استدعاء الرد من JSON ======================
 function getRandomResponse(emotion) {
-    if (!responses[currentLanguage] || !responses[currentLanguage][emotion]) 
-        return "أنا هنا لأستمع إليك.";
+    if (!responses[currentLanguage]) {
+        return currentLanguage === 'ar' ? 
+            "عذراً، لا تتوفر ردود بلغتك حالياً." : 
+            "Sorry, responses in your language are not available.";
+    }
+    
+    if (!responses[currentLanguage][emotion]) {
+        // إذا لم يكن هناك ردود للمشاعر المحددة، استخدم الردود المحايدة
+        if (responses[currentLanguage]['neutral']) {
+            const neutralChoices = responses[currentLanguage]['neutral'];
+            return neutralChoices[Math.floor(Math.random() * neutralChoices.length)];
+        }
+        
+        return currentLanguage === 'ar' ? 
+            "أنا هنا لأستمع إليك." : 
+            "I'm here to listen to you.";
+    }
+    
     const choices = responses[currentLanguage][emotion];
     return choices[Math.floor(Math.random() * choices.length)];
 }
@@ -100,7 +203,6 @@ function updatePlaceholder() {
     }
 }
 
-// ====================== إعداد مستمعي الأحداث ======================
 function setupEventListeners() {
     const button = document.getElementById('send-btn');
     const userInput = document.getElementById('user-input');
@@ -119,15 +221,42 @@ function setupEventListeners() {
 
     document.querySelectorAll('.lang-btn').forEach(button => {
         button.addEventListener('click', function() {
+            const lang = this.getAttribute('data-lang');
+            
+            // التحقق من أن اللغة متوفرة قبل التبديل
+            if (!responses[lang]) {
+                alert(lang === 'ar' ? 
+                    "هذه اللغة غير متوفرة حالياً" : 
+                    `Language "${lang}" is not available now`);
+                return;
+            }
+            
             document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
-            currentLanguage = this.getAttribute('data-lang');
+            currentLanguage = lang;
             updatePlaceholder();
+            
+            // تحديث رسالة الترحيب بناءً على اللغة المختارة
+            const welcomeMsg = document.querySelector('.bot-message');
+            if (welcomeMsg) {
+                if (lang === 'ar') {
+                    welcomeMsg.textContent = 'مرحباً! أنا MarwaChat، كيف يمكنني مساعدتك اليوم؟ 🌸';
+                } else if (lang === 'en') {
+                    welcomeMsg.textContent = 'Hello! I am MarwaChat, how can I help you today? 🌸';
+                } else if (lang === 'es') {
+                    welcomeMsg.textContent = '¡Hola! Soy MarwaChat, ¿cómo puedo ayudarte hoy? 🌸';
+                } else if (lang === 'fr') {
+                    welcomeMsg.textContent = 'Bonjour ! Je suis MarwaChat, comment puis-je vous aider aujourd\'hui ? 🌸';
+                } else if (lang === 'hi') {
+                    welcomeMsg.textContent = 'नमस्ते! मैं MarwaChat हूं, आज मैं आपकी कैसे मदद कर सकता हूं? 🌸';
+                } else if (lang === 'tl') {
+                    welcomeMsg.textContent = 'Kamusta! Ako si MarwaChat, paano kita matutulungan ngayon? 🌸';
+                }
+            }
         });
     });
 }
 
-// ====================== إرسال الرسالة ======================
 function sendMessage() {
     const userInput = document.getElementById('user-input');
     if (!userInput) return;
@@ -192,7 +321,6 @@ function sendMessage() {
     }, typingTime);
 }
 
-// ====================== تقييم الرد ======================
 function rateResponse(responseText, rating) {
     const contextData = {
         userInput: conversationHistory[conversationHistory.length - 1],
@@ -210,16 +338,19 @@ function rateResponse(responseText, rating) {
     
     const thankYouMessages = {
         ar: 'شكرًا للتقييم! ستتحسن ردودي بناءً على ملاحظاتك.',
-        en: 'Thank you for your feedback! I will improve my responses based on your input.'
+        en: 'Thank you for your feedback! I will improve my responses based on your input.',
+        es: '¡Gracias por tu feedback! Mejoraré mis respuestas basándome en tus comentarios.',
+        fr: 'Merci pour votre feedback ! J\'améliorerai mes réponses en fonction de vos commentaires.',
+        hi: 'आपके फीडबैक के लिए धन्यवाद! मैं आपकी प्रतिक्रिया के आधार पर अपनी प्रतिक्रियाओं में सुधार करूंगा।',
+        tl: 'Salamat sa iyong feedback! Pagbutihin ko ang aking mga tugon batay sa iyong input.'
     };
+    
     alert(thankYouMessages[currentLanguage] || thankYouMessages['en']);
 }
 
-// ====================== DOMContentLoaded ======================
+// تهيئة Lottie عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', function() {
     const lottieContainer = document.getElementById('lottie-bg');
-
-    // شغّل الخلفية مرة واحدة فقط
     if (lottieContainer && typeof lottie !== 'undefined') {
         lottie.loadAnimation({
             container: lottieContainer,
@@ -229,6 +360,4 @@ document.addEventListener('DOMContentLoaded', function() {
             path: 'Background Full Screen-Night.json'
         });
     }
-    
-    updatePlaceholder();
 });
