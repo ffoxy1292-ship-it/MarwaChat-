@@ -16,7 +16,7 @@ const placeholders = {
     tl: 'I-type ang iyong mensahe dito...'
 };
 
-// كلمات المشاعر مع قيمها (يجب أن تكون خارج الدالة)
+// كلمات المشاعر مع قيمها
 const sentimentWords = {
     // العربية
     "فرحان": 2, "مسرور": 2, "سعيدة": 2, "فرحة": 2,  
@@ -67,76 +67,120 @@ const negationWords = [
     "non", "ne", "pas", "jamais",
     "नहीं", "मत", "ना",
     "hindi", "ayaw", "huwag"
-};
+];
 
 async function loadResponses() {
     try {
         const res = await fetch('responses.json');
-        responses = await res.json();
+        
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        
+        // التحقق من صحة هيكل البيانات
+        if (typeof data !== 'object' || data === null) {
+            throw new Error('Invalid JSON structure');
+        }
+        
+        responses = data;
         console.log('تم تحميل الردود بنجاح');
         
-        // التحقق من وجود جميع اللغات في الملف
-        const availableLanguages = Object.keys(responses);
-        console.log('اللغات المتاحة:', availableLanguages);
-        
-        // تعطيل أزرار اللغات غير المتوفرة
-        document.querySelectorAll('.lang-btn').forEach(btn => {
-            const lang = btn.getAttribute('data-lang');
-            if (!availableLanguages.includes(lang)) {
-                btn.disabled = true;
-                btn.style.opacity = '0.5';
-                btn.title = 'هذه اللغة غير متوفرة';
-            }
-        });
     } catch (err) {
         console.error('خطأ في تحميل responses.json:', err);
-        // استخدام ردود افتراضية بسيطة كاحتياطي
+        
+        // استخدام ردود افتراضية شاملة
         responses = {
-            ar: { 
-                greeting: ["مرحباً! كيف يمكنني مساعدتك؟"],
-                neutral: ["أخبرني المزيد عن ذلك"]
+            ar: {
+                greeting: ["مرحباً! أنا MarwaChat 🌸"],
+                happiness: ["أشعر بسعادتك! 😊", "هذا رائع! 🌟"],
+                sadness: ["أنا هنا من أجلك 🫂", "يمكنني الاستماع إذا أردت التحدث 💬"],
+                anger: ["لنأخذ نفساً عميقاً 🌬️", "حاول أن تهدأ قليلاً ☮️"],
+                neutral: ["أخبرني المزيد 🤔", "ممم فهمت 💭", "تابع 📝"],
+                boredom: ["أقترح نقرأ كتاب معاً 📚", "لنستمع لموسيقى هادئة 🎵"],
+                surprise: ["مفاجأة! 🎉", "لم أتوقع ذلك! 😮"],
+                tiredness: ["خذ قسطاً من الراحة 🛌", "الجسم يحتاج للاسترخاء 🧘‍♀️"]
             },
-            en: { 
-                greeting: ["Hello! How can I help you?"],
-                neutral: ["Tell me more about that"]
+            en: {
+                greeting: ["Hello! I am MarwaChat 🌸"],
+                happiness: ["I feel your happiness! 😊", "That's wonderful! 🌟"],
+                sadness: ["I'm here for you 🫂", "I can listen if you want to talk 💬"],
+                anger: ["Let's take a deep breath 🌬️", "Try to calm down a bit ☮️"],
+                neutral: ["Tell me more 🤔", "I see 💭", "Continue 📝"],
+                boredom: ["Let's read a book together 📚", "We can listen to calm music 🎵"],
+                surprise: ["Surprise! 🎉", "I didn't expect that! 😮"],
+                tiredness: ["Get some rest 🛌", "Your body needs relaxation 🧘‍♀️"]
             }
         };
     }
 }
 
 async function initChat() {
+    console.log('بدء تهيئة التطبيق...');
+    
+    // تحميل الردود أولاً
     await loadResponses();
+    
+    // ثم تهيئة باقي المكونات
     updatePlaceholder();
     setupEventListeners();
+    
+    // تهيئة Lottie بعد تحميل الصفحة بالكامل
+    initLottie();
+    
+    console.log('تم تهيئة التطبيق بنجاح');
 }
 
-document.addEventListener('DOMContentLoaded', initChat);
+function initLottie() {
+    const lottieContainer = document.getElementById('lottie-bg');
+    
+    if (!lottieContainer) {
+        console.warn('عنصر Lottie غير موجود');
+        return;
+    }
+    
+    if (typeof lottie === 'undefined') {
+        console.warn('مكتبة Lottie غير محملة');
+        return;
+    }
+    
+    try {
+        lottie.loadAnimation({
+            container: lottieContainer,
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            path: 'Background Full Screen-Night.json'
+        });
+        console.log('تم تحميل animation بنجاح');
+    } catch (error) {
+        console.error('خطأ في تحميل animation:', error);
+    }
+}
 
 function analyzeSentiment(text) {
-    console.log("تحليل المشاعر للنص:", text);
+    if (!text || typeof text !== 'string') return 'neutral';
+    
     let score = 0;  
     let negation = false;  
     const words = text.split(/\s+/);
-    console.log("الكلمات المستخرجة:", words);
+    let emotionWordsFound = 0;
 
     for (let i = 0; i < words.length; i++) {
         let word = words[i].toLowerCase().replace(/[.,!?;:]$/, '');
-        console.log("معالجة الكلمة:", word);
         
         if (negationWords.includes(word)) {
-            console.log("كلمة نفي:", word);
             negation = true;
             continue;
         }
         
         if (sentimentWords[word] !== undefined) {
             let value = sentimentWords[word];
-            console.log("كلمة مشاعر:", word, "القيمة:", value);
             
             if (negation) {
-                value = value * -1;
+                value = -value;
                 negation = false;
-                console.log("تطبيق النفي، القيمة الجديدة:", value);
             }
             
             // التحقق من وجود معدل في الكلمة التالية
@@ -144,36 +188,41 @@ function analyzeSentiment(text) {
                 let nextWord = words[i + 1].toLowerCase().replace(/[.,!?;:]$/, '');
                 if (modifiers[nextWord] !== undefined) {
                     value *= modifiers[nextWord];
-                    console.log("تطبيق المعدل:", nextWord, "القيمة الجديدة:", value);
                 }
             }
             
             score += value;
-            console.log("النتيجة الحالية:", score);
+            emotionWordsFound++;
         }
     }
 
-    console.log("النتيجة النهائية:", score);
+    // تحسين دقة التحليل
+    if (emotionWordsFound === 0) return 'neutral';
     
-    if (score > 1) return 'happiness';
-    if (score < -2) return 'anger';
-    if (score < -1) return 'sadness';
-    if (score === 0) return 'neutral';
-    return Math.random() > 0.5 ? 'greeting' : 'neutral';
+    const averageScore = score / emotionWordsFound;
+    
+    if (averageScore > 1.2) return 'happiness';
+    if (averageScore < -1.5) return 'anger';
+    if (averageScore < -0.5) return 'sadness';
+    if (averageScore > 0.3) return 'happiness';
+    
+    return 'neutral';
 }
 
 function updateConversationContext(text, emotion) {
     const topics = {
-        ar: ['عمل', 'دراسة', 'عائلة', 'أصدقاء', 'صحة', 'شعر', 'نصائح', 'تنظيم'],
-        en: ['work', 'study', 'family', 'friends', 'health', 'poetry', 'advice', 'organization'],
-        es: ['trabajo', 'estudio', 'familia', 'amigos', 'salud', 'poesía', 'consejos', 'organización'],
-        fr: ['travail', 'étude', 'famille', 'amis', 'santé', 'poésie', 'conseils', 'organisation'],
-        hi: ['काम', 'अध्ययन', 'परिवार', 'दोस्त', 'स्वास्थ्य', 'कविता', 'सलाह', 'संगठन'],
-        tl: ['trabaho', 'pag-aaral', 'pamilya', 'kaibigan', 'kalusugan', 'tula', 'payo', 'organisasyon']
+        ar: ['عمل', 'دراسة', 'عائلة', 'أصدقاء', 'صحة', 'شعر', 'نصائح', 'تنظيم', 'جامعة', 'وظيفة'],
+        en: ['work', 'study', 'family', 'friends', 'health', 'poetry', 'advice', 'organization', 'university', 'job'],
+        es: ['trabajo', 'estudio', 'familia', 'amigos', 'salud', 'poesía', 'consejos', 'organización', 'universidad', 'trabajo'],
+        fr: ['travail', 'étude', 'famille', 'amis', 'santé', 'poésie', 'conseils', 'organisation', 'université', 'emploi'],
+        hi: ['काम', 'अध्ययन', 'परिवार', 'दोस्त', 'स्वास्थ्य', 'कविता', 'सलाह', 'संगठन', 'विश्वविद्यालय', 'नौकरी'],
+        tl: ['trabaho', 'pag-aaral', 'pamilya', 'kaibigan', 'kalusugan', 'tula', 'payo', 'organisasyon', 'unibersidad', 'trabaho']
     };
 
     const currentTopics = topics[currentLanguage] || topics['ar'];
-    const mentioned = currentTopics.filter(topic => text.toLowerCase().includes(topic.toLowerCase()));
+    const mentioned = currentTopics.filter(topic => 
+        text.toLowerCase().includes(topic.toLowerCase())
+    );
     
     if (mentioned.length > 0) {
         conversationContext.currentTopic = mentioned[0];
@@ -185,9 +234,10 @@ function updateConversationContext(text, emotion) {
 }
 
 function getRandomResponse(emotion) {
-    console.log("العاطفة المحددة:", emotion);
-    console.log("اللغة الحالية:", currentLanguage);
-    console.log("الردود المتاحة:", responses[currentLanguage]);
+    // إذا لم يتم تحميل الردود بعد، استخدم الردود الافتراضية
+    if (Object.keys(responses).length === 0) {
+        return getFallbackResponse(emotion);
+    }
     
     if (!responses[currentLanguage]) {
         return currentLanguage === 'ar' ? 
@@ -196,21 +246,47 @@ function getRandomResponse(emotion) {
     }
     
     if (!responses[currentLanguage][emotion]) {
-        console.log("لا توجد ردود للعاطفة:", emotion);
-        // إذا لم يكن هناك ردود للمشاعر المحددة، استخدم الردود المحايدة
-        if (responses[currentLanguage]['neutral']) {
-            const neutralChoices = responses[currentLanguage]['neutral'];
-            return neutralChoices[Math.floor(Math.random() * neutralChoices.length)];
-        }
-        
-        return currentLanguage === 'ar' ? 
-            "أنا هنا لأستمع إليك." : 
-            "I'm here to listen to you.";
+        return getFallbackResponse(emotion);
     }
     
     const choices = responses[currentLanguage][emotion];
-    console.log("الاختيارات المتاحة:", choices);
     return choices[Math.floor(Math.random() * choices.length)];
+}
+
+function getFallbackResponse(emotion) {
+    const fallbackResponses = {
+        'ar': {
+            'happiness': ['أشعر بسعادتك! 🌸', 'هذا رائع! 🌟'],
+            'sadness': ['أنا هنا من أجلك 🫂', 'يمكنني الاستماع إذا أردت التحدث 💬'],
+            'anger': ['لنأخذ نفساً عميقاً 🌬️', 'حاول أن تهدأ قليلاً ☮️'],
+            'neutral': ['أخبرني المزيد 🤔', 'ممم فهمت 💭'],
+            'greeting': ['مرحباً! كيف يمكنني مساعدتك؟ 🌸'],
+            'boredom': ['أقترح نقرأ كتاب معاً 📚', 'لنستمع لموسيقى هادئة 🎵'],
+            'surprise': ['مفاجأة! 🎉', 'لم أتوقع ذلك! 😮'],
+            'tiredness': ['خذ قسطاً من الراحة 🛌', 'الجسم يحتاج للاسترخاء 🧘‍♀️']
+        },
+        'en': {
+            'happiness': ['I feel your happiness! 🌸', 'That\'s wonderful! 🌟'],
+            'sadness': ['I\'m here for you 🫂', 'I can listen if you want to talk 💬'],
+            'anger': ['Let\'s take a deep breath 🌬️', 'Try to calm down a bit ☮️'],
+            'neutral': ['Tell me more 🤔', 'I see 💭'],
+            'greeting': ['Hello! How can I help you? 🌸'],
+            'boredom': ['Let\'s read a book together 📚', 'We can listen to calm music 🎵'],
+            'surprise': ['Surprise! 🎉', 'I didn\'t expect that! 😮'],
+            'tiredness': ['Get some rest 🛌', 'Your body needs relaxation 🧘‍♀️']
+        }
+    };
+    
+    // إذا كانت اللغة غير موجودة، استخدم الإنجليزية
+    const lang = fallbackResponses[currentLanguage] ? currentLanguage : 'en';
+    
+    if (fallbackResponses[lang][emotion]) {
+        const choices = fallbackResponses[lang][emotion];
+        return choices[Math.floor(Math.random() * choices.length)];
+    }
+    
+    // إذا لم يكن هناك رد للمشاعر، استخدم رد محايد
+    return fallbackResponses[lang]['neutral'][0];
 }
 
 function updatePlaceholder() {
@@ -221,20 +297,38 @@ function updatePlaceholder() {
 }
 
 function setupEventListeners() {
+    console.log('جاري إعداد مستمعي الأحداث...');
+    
     const button = document.getElementById('send-btn');
     const userInput = document.getElementById('user-input');
     
-    if (button) {
-        button.addEventListener('click', sendMessage);
+    if (!button) {
+        console.error('زر الإرسال غير موجود!');
+        return;
     }
     
-    if (userInput) {
-        userInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
+    if (!userInput) {
+        console.error('حقل الإدخال غير موجود!');
+        return;
     }
+    
+    // إزالة أي event listeners موجودة لمنع التكرار
+    button.replaceWith(button.cloneNode(true));
+    userInput.replaceWith(userInput.cloneNode(true));
+    
+    // الحصول على العناصر الجديدة
+    const newButton = document.getElementById('send-btn');
+    const newInput = document.getElementById('user-input');
+    
+    newButton.addEventListener('click', sendMessage);
+    console.log('تم تسجيل حدث النقر على الزر');
+    
+    newInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            console.log('تم الضغط على Enter');
+            sendMessage();
+        }
+    });
 
     document.querySelectorAll('.lang-btn').forEach(button => {
         button.addEventListener('click', function() {
@@ -256,36 +350,46 @@ function setupEventListeners() {
             // تحديث رسالة الترحيب بناءً على اللغة المختارة
             const welcomeMsg = document.querySelector('.bot-message');
             if (welcomeMsg) {
-                if (lang === 'ar') {
-                    welcomeMsg.textContent = 'مرحباً! أنا MarwaChat، كيف يمكنني مساعدتك اليوم؟ 🌸';
-                } else if (lang === 'en') {
-                    welcomeMsg.textContent = 'Hello! I am MarwaChat, how can I help you today? 🌸';
-                } else if (lang === 'es') {
-                    welcomeMsg.textContent = '¡Hola! Soy MarwaChat, ¿cómo puedo ayudarte hoy? 🌸';
-                } else if (lang === 'fr') {
-                    welcomeMsg.textContent = 'Bonjour ! Je suis MarwaChat, comment puis-je vous aider aujourd\'hui ? 🌸';
-                } else if (lang === 'hi') {
-                    welcomeMsg.textContent = 'नमस्ते! मैं MarwaChat हूं, आज मैं आपकी कैसे मदद कर सकता हूं? 🌸';
-                } else if (lang === 'tl') {
-                    welcomeMsg.textContent = 'Kamusta! Ako si MarwaChat, paano kita matutulungan ngayon? 🌸';
-                }
+                const greetings = {
+                    'ar': 'مرحباً! أنا MarwaChat، كيف يمكنني مساعدتك اليوم؟ 🌸',
+                    'en': 'Hello! I am MarwaChat, how can I help you today? 🌸',
+                    'es': '¡Hola! Soy MarwaChat, ¿cómo puedo ayudarte hoy? 🌸',
+                    'fr': 'Bonjour ! Je suis MarwaChat, comment puis-je vous aider aujourd\'hui ? 🌸',
+                    'hi': 'नमस्ते! मैं MarwaChat हूं, आज मैं आपकी कैसे मदद कर सकता हूं? 🌸',
+                    'tl': 'Kamusta! Ako si MarwaChat, paano kita matutulungan ngayon? 🌸'
+                };
+                
+                welcomeMsg.textContent = greetings[lang] || greetings['ar'];
             }
         });
     });
+    
+    console.log('تم إعداد جميع مستمعي الأحداث بنجاح');
 }
 
 function sendMessage() {
+    console.log('محاولة إرسال رسالة...');
+    
     const userInput = document.getElementById('user-input');
-    if (!userInput) return;
+    if (!userInput) {
+        console.error('حقل الإدخال غير موجود');
+        return;
+    }
     
     const userText = userInput.value.trim();
-    if (!userText) return;
+    if (!userText) {
+        console.log('النص فارغ، لا شيء للإرسال');
+        return;
+    }
 
     conversationHistory.push(userText);
     if (conversationHistory.length > 5) conversationHistory.shift();
 
     const chatContainer = document.getElementById('chat-container');
-    if (!chatContainer) return;
+    if (!chatContainer) {
+        console.error('حاوية المحادثة غير موجودة');
+        return;
+    }
     
     const userMsg = document.createElement('div');
     userMsg.className = 'message user-message';
@@ -302,6 +406,7 @@ function sendMessage() {
     }
 
     const typingTime = Math.min(3000, Math.max(1000, userText.length * 50));
+    console.log(`وقت الكتابة: ${typingTime}ms`);
 
     setTimeout(() => {
         if (typingIndicator) {
@@ -310,7 +415,6 @@ function sendMessage() {
 
         const contextText = conversationHistory.join(' ');
         const emotion = analyzeSentiment(contextText);
-        console.log("النص الكامل:", contextText);
         console.log("العاطفة المكتشفة:", emotion);
         
         updateConversationContext(userText, emotion);
@@ -326,6 +430,7 @@ function sendMessage() {
             <button class="feedback-btn" data-response="${encodeURIComponent(smartResponse)}" data-rating="good">👍</button>
             <button class="feedback-btn" data-response="${encodeURIComponent(smartResponse)}" data-rating="bad">👎</button>
         `;
+        
         feedbackDiv.querySelectorAll('.feedback-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const response = decodeURIComponent(this.getAttribute('data-response'));
@@ -342,19 +447,45 @@ function sendMessage() {
 }
 
 function rateResponse(responseText, rating) {
-    const contextData = {
-        userInput: conversationHistory[conversationHistory.length - 1],
-        emotion: conversationContext.userMood,
-        topic: conversationContext.currentTopic
-    };
+    console.log('تقييم الرد:', rating, 'للنص:', responseText);
     
-    let ratings = JSON.parse(localStorage.getItem('responseRatings') || '{}');
-    ratings[responseText] = {
-        rating: rating,
-        context: contextData,
-        timestamp: Date.now()
-    };
-    localStorage.setItem('responseRatings', JSON.stringify(ratings));
+    // تحقق من دعم localStorage
+    if (typeof(Storage) === "undefined") {
+        alert("عذراً، المتصفح لا يدعم خاصية التخزين المحلي");
+        return;
+    }
+    
+    try {
+        const contextData = {
+            userInput: conversationHistory[conversationHistory.length - 1] || '',
+            emotion: conversationContext.userMood,
+            topic: conversationContext.currentTopic
+        };
+        
+        let ratings = {};
+        try {
+            const storedRatings = localStorage.getItem('responseRatings');
+            ratings = storedRatings ? JSON.parse(storedRatings) : {};
+        } catch (e) {
+            console.error('خطأ في قراءة localStorage:', e);
+            localStorage.removeItem('responseRatings');
+            ratings = {};
+        }
+        
+        ratings[responseText] = {
+            rating: rating,
+            context: contextData,
+            timestamp: Date.now()
+        };
+        
+        localStorage.setItem('responseRatings', JSON.stringify(ratings));
+        console.log('تم حفظ التقييم بنجاح');
+        
+    } catch (error) {
+        console.error('خطأ في حفظ التقييم:', error);
+        alert('حدث خطأ في حفظ التقييم');
+        return;
+    }
     
     const thankYouMessages = {
         ar: 'شكرًا للتقييم! ستتحسن ردودي بناءً على ملاحظاتك.',
@@ -368,16 +499,25 @@ function rateResponse(responseText, rating) {
     alert(thankYouMessages[currentLanguage] || thankYouMessages['en']);
 }
 
-// تهيئة Lottie عند تحميل الصفحة
+// بدء التطبيق عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', function() {
-    const lottieContainer = document.getElementById('lottie-bg');
-    if (lottieContainer && typeof lottie !== 'undefined') {
-        lottie.loadAnimation({
-            container: lottieContainer,
-            renderer: 'svg',
-            loop: true,
-            autoplay: true,
-            path: 'Background Full Screen-Night.json'
-        });
-    }
+    console.log('تم تحميل DOM بالكامل');
+    initChat();
 });
+
+// إضافة وظيفة للتصحيح في حالة الطوارئ
+function emergencyFix() {
+    console.log('تنفيذ الإصلاح الطارئ...');
+    
+    // مسح localStorage
+    if (typeof(Storage) !== "undefined") {
+        localStorage.clear();
+        console.log('تم مسح localStorage');
+    }
+    
+    // إعادة تحميل الصفحة
+    location.reload();
+}
+
+// جعل الوظيفة متاحة globally للاستخدام في console
+window.emergencyFix = emergencyFix;
