@@ -1,45 +1,12 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>MarwaChat</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
-    <style>
-        #lottie-container {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: -1;
-            opacity: 0.3;
-        }
-        .chat-container {
-            background: rgba(255,255,255,0.9);
-            padding: 20px;
-            border-radius: 15px;
-            margin: 20px;
-        }
-    </style>
 </head>
 <body>
-    <div id="lottie-container"></div>
-    
-    <div class="chat-container">
-        <div class="lang-buttons">
-            <button class="lang-btn active" data-lang="ar">عربي</button>
-            <button class="lang-btn" data-lang="en">English</button>
-            <button class="lang-btn" data-lang="es">Español</button>
-            <button class="lang-btn" data-lang="fr">Français</button>
-            <button class="lang-btn" data-lang="hi">हिन्दी</button>
-            <button class="lang-btn" data-lang="tl">Tagalog</button>
-        </div>
-        
-        <div id="chat-box"></div>
-        
-        <div class="input-area">
-            <input type="text" id="user-input" placeholder="اكتب رسالتك هنا...">
-            <button id="send-btn">إرسال</button>
-        </div>
-    </div>
+    <input type="text" id="user-input">
+    <button id="send-btn">إرسال</button>
+    <div id="chat-box"></div>
     
     <script src="script.js"></script>
 </body>
