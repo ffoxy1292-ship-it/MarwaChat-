@@ -1,45 +1,113 @@
 // script.js
 let emotionsData = {};
 let currentLanguage = 'ar';
-let currentAnimation = null;
 
-console.log('جاري تحميل البرنامج...');
-
-// تحميل بيانات المشاعر
-async function loadEmotionsData() {
+// 1. تحميل بيانات المشاعر من JSON
+async function loadEmotions() {
     try {
-        console.log('بدء تحميل emotions.json...');
         const response = await fetch('emotions.json');
-        
-        if (!response.ok) {
-            throw new Error(`خطأ HTTP: ${response.status}`);
-        }
-        
         emotionsData = await response.json();
-        console.log('تم تحميل بيانات المشاعر بنجاح:', emotionsData);
-        setupEventListeners();
+        console.log('تم تحميل الردود بنجاح');
+        initChat();
     } catch (error) {
-        console.error('خطأ في تحميل البيانات:', error);
-        // بدء الإعداد حتى لو فشل تحميل JSON
-        setupEventListeners();
+        console.log('استخدم ردود افتراضية');
+        emotionsData = {
+            'ar': { greeting: 'مرحباً! أخبرني عن مشاعرك 🌸' },
+            'en': { greeting: 'Hello! Tell me about your feelings 🌸' },
+            'es': { greeting: '¡Hola! Cuéntame tus sentimientos 🌸' },
+            'fr': { greeting: 'Bonjour! Parlez-moi de vos sentiments 🌸' },
+            'hi': { greeting: 'नमस्ते! मुझे अपनी भावनाओं के बारे में बताएं 🌸' },
+            'tl': { greeting: 'Kamusta! Sabihin sa akin ang iyong nararamdaman 🌸' }
+        };
+        initChat();
     }
 }
 
-// دالة مبسطة لإضافة الرسائل
-function addMessageToChat(message, sender) {
-    console.log('إضافة رسالة:', message, 'من:', sender);
+// 2. البحث عن رد مناسب
+function findResponse(userMessage) {
+    const langData = emotionsData[currentLanguage];
+    if (!langData) return 'اللغة غير متوفرة';
     
-    const chatBox = document.getElementById('chat-box');
-    if (!chatBox) {
-        console.error('عنصر chat-box غير موجود!');
-        return;
+    userMessage = userMessage.toLowerCase();
+    
+    // كلمات مفتاحية بسيطة
+    if (userMessage.includes('مرحبا') || userMessage.includes('hello') || userMessage.includes('hola')) {
+        return langData.greeting || 'أهلاً بك!';
     }
+    else if (userMessage.includes('حب') || userMessage.includes('love') || userMessage.includes('amour')) {
+        return 'الحب أجمل شعور في العالم 💕';
+    }
+    else if (userMessage.includes('حزن') || userMessage.includes('sad') || userMessage.includes('triste')) {
+        return 'لا تحزن، أنا هنا معك 🌸';
+    }
+    else if (userMessage.includes('فرح') || userMessage.includes('happy') || userMessage.includes('heureux')) {
+        return 'الفرح يضيء العالم! 🌞';
+    }
+    else {
+        return langData.greeting || 'أخبرني المزيد عن مشاعرك';
+    }
+}
+
+// 3. تحميل خلفية متحركة
+function loadLottieBackground(emotion) {
+    const animationFiles = {
+        'love': 'Background Full Screen-Romantic.json',
+        'happy': 'Background Full Screen-Sunny.json', 
+        'sad': 'Background Full Screen-Rain.json',
+        'default': 'Background Full Screen-Night.json'
+    };
     
+    const fileName = animationFiles[emotion] || animationFiles.default;
+    
+    // إذا كان Lottie موجود، شغلي الخلفية
+    if (typeof lottie !== 'undefined') {
+        lottie.loadAnimation({
+            container: document.getElementById('lottie-container'),
+            path: fileName,
+            renderer: 'svg',
+            loop: true
+        });
+    }
+}
+
+// 4. إرسال الرسالة
+function sendMessage() {
+    const userInput = document.getElementById('user-input');
+    const message = userInput.value.trim();
+    
+    if (!message) return;
+    
+    // أضيفي رسالة المستخدم
+    addMessage(message, 'user');
+    
+    // امسحي الحقل مباشرة
+    userInput.value = '';
+    
+    // رد البوت بعد تأخير
+    setTimeout(() => {
+        const response = findResponse(message);
+        addMessage(response, 'bot');
+        
+        // غيري الخلفية حسب المشاعر
+        if (message.includes('حب') || message.includes('love')) {
+            loadLottieBackground('love');
+        } else if (message.includes('فرح') || message.includes('happy')) {
+            loadLottieBackground('happy');
+        } else if (message.includes('حزن') || message.includes('sad')) {
+            loadLottieBackground('sad');
+        }
+    }, 1000);
+}
+
+// 5. إضافة الرسالة للشات
+function addMessage(text, sender) {
+    const chatBox = document.getElementById('chat-box');
     const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${sender}-message`;
-    messageDiv.textContent = message;
+    
+    messageDiv.className = `${sender}-message`;
+    messageDiv.textContent = text;
     messageDiv.style.padding = '10px';
-    messageDiv.style.margin = '5px';
+    messageDiv.style.margin = '10px 0';
     messageDiv.style.borderRadius = '10px';
     messageDiv.style.maxWidth = '70%';
     
@@ -57,138 +125,48 @@ function addMessageToChat(message, sender) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// دالة إرسال الرسالة المبسطة
-function sendMessage() {
-    console.log('تم استدعاء sendMessage');
+// 6. تبديل اللغة
+function switchLanguage(lang) {
+    currentLanguage = lang;
     
-    const userInput = document.getElementById('user-input');
-    if (!userInput) {
-        console.error('عنصر user-input غير موجود!');
-        return;
-    }
+    // غيري الأزرار النشطة
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-lang="${lang}"]`).classList.add('active');
     
-    const message = userInput.value.trim();
-    console.log('الرسالة:', message);
-    
-    if (!message) {
-        console.log('الرسالة فارغة');
-        return;
-    }
-    
-    // إضافة رسالة المستخدم
-    addMessageToChat(message, 'user');
-    userInput.value = '';
-    
-    // رد بسيط من البوت
-    setTimeout(() => {
-        const responses = {
-            'ar': ['أهلاً بك!', 'كيف حالك؟', 'أنا هنا لمساعدتك'],
-            'en': ['Hello!', 'How are you?', 'I am here to help you'],
-            'es': ['¡Hola!', '¿Cómo estás?', 'Estoy aquí para ayudarte'],
-            'fr': ['Bonjour !', 'Comment ça va ?', 'Je suis ici pour vous aider'],
-            'hi': ['नमस्ते!', 'आप कैसे हैं?', 'मैं आपकी मदद के लिए यहां हूं'],
-            'tl': ['Kamusta!', 'Kumusta ka?', 'Nandito ako para tulungan ka']
-        };
-        
-        const langResponses = responses[currentLanguage] || responses['ar'];
-        const randomResponse = langResponses[Math.floor(Math.random() * langResponses.length)];
-        
-        addMessageToChat(randomResponse, 'bot');
-    }, 1000);
+    // غيري placeholder
+    const placeholders = {
+        'ar': 'اكتب رسالتك هنا...',
+        'en': 'Type your message...',
+        'es': 'Escribe tu mensaje...',
+        'fr': 'Tapez votre message...',
+        'hi': 'अपना संदेश लिखें...',
+        'tl': 'I-type ang iyong mensahe...'
+    };
+    document.getElementById('user-input').placeholder = placeholders[lang] || placeholders.ar;
 }
 
-// إعداد event listeners مع تصحيح الأخطاء
-function setupEventListeners() {
-    console.log('بدء إعداد event listeners...');
-    
-    const button = document.getElementById('send-btn');
+// 7. تهيئة الشات
+function initChat() {
+    const sendBtn = document.getElementById('send-btn');
     const userInput = document.getElementById('user-input');
     
-    if (!button) {
-        console.error('زر الإرسال غير موجود!');
-        return;
-    }
-    
-    if (!userInput) {
-        console.error('حقل الإدخال غير موجود!');
-        return;
-    }
-    
-    console.log('تم العثور على العناصر بنجاح');
-    
-    // إزالة أي event listeners قديمة
-    button.onclick = null;
-    userInput.onkeypress = null;
-    
-    // إضافة event listeners جديدة
-    button.addEventListener('click', function() {
-        console.log('تم النقر على زر الإرسال');
-        sendMessage();
-    });
-    
-    userInput.addEventListener('keypress', function(e) {
-        console.log('تم الضغط على مفتاح:', e.key);
-        if (e.key === 'Enter') {
-            console.log('تم الضغط على Enter');
-            sendMessage();
-        }
+    // event listeners
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
     });
     
     // أزرار اللغة
-    const langButtons = document.querySelectorAll('.lang-btn');
-    console.log('عدد أزرار اللغة:', langButtons.length);
-    
-    langButtons.forEach(btn => {
+    document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            const lang = this.getAttribute('data-lang');
-            console.log('تم النقر على لغة:', lang);
-            switchLanguage(lang);
+            switchLanguage(this.getAttribute('data-lang'));
         });
     });
     
-    console.log('تم إعداد جميع event listeners بنجاح');
+    console.log('الشات جاهز!');
 }
 
-// تبديل اللغة
-function switchLanguage(lang) {
-    console.log('تبديل اللغة إلى:', lang);
-    
-    currentLanguage = lang;
-    
-    // تحديث الأزرار النشطة
-    document.querySelectorAll('.lang-btn').forEach(b => {
-        b.classList.remove('active');
-    });
-    
-    const activeBtn = document.querySelector(`[data-lang="${lang}"]`);
-    if (activeBtn) {
-        activeBtn.classList.add('active');
-    }
-    
-    // تحديث placeholder
-    const userInput = document.getElementById('user-input');
-    if (userInput) {
-        const placeholders = {
-            'ar': 'اكتب رسالتك هنا...',
-            'en': 'Type your message here...',
-            'es': 'Escribe tu mensaje aquí...',
-            'fr': 'Tapez votre message ici...',
-            'hi': 'अपना संदेश यहाँ लिखें...',
-            'tl': 'I-type ang iyong mensahe dito...'
-        };
-        userInput.placeholder = placeholders[lang] || placeholders['ar'];
-    }
-}
-
-// بدء التحميل عندما تكون الصفحة جاهزة
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('الصفحة تم تحميلها بالكامل');
-    loadEmotionsData();
-});
-
-// أيضًا نستدعي الإعداد عندما يتم تحميل الـ DOM بالكامل
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', loadEmotionsData);
-} else {
-    loadEmotionsData();
-               }
+// ابدئي عندما تتحمّل الصفحة
+document.addEventListener('DOMContentLoaded', loadEmotions);
