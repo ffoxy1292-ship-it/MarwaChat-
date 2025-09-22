@@ -1,174 +1,194 @@
+// script.js
 let emotionsData = {};
 let currentLanguage = 'ar';
 let currentAnimation = null;
 
+console.log('جاري تحميل البرنامج...');
+
 // تحميل بيانات المشاعر
 async function loadEmotionsData() {
     try {
+        console.log('بدء تحميل emotions.json...');
         const response = await fetch('emotions.json');
+        
+        if (!response.ok) {
+            throw new Error(`خطأ HTTP: ${response.status}`);
+        }
+        
         emotionsData = await response.json();
-        console.log('تم تحميل بيانات المشاعر بنجاح');
+        console.log('تم تحميل بيانات المشاعر بنجاح:', emotionsData);
         setupEventListeners();
     } catch (error) {
         console.error('خطأ في تحميل البيانات:', error);
+        // بدء الإعداد حتى لو فشل تحميل JSON
+        setupEventListeners();
     }
 }
 
-// البحث الذكي عن المشاعر
-function detectEmotion(message, language) {
-    const langData = emotionsData[language];
-    if (!langData) return null;
+// دالة مبسطة لإضافة الرسائل
+function addMessageToChat(message, sender) {
+    console.log('إضافة رسالة:', message, 'من:', sender);
     
-    message = message.toLowerCase();
-    const detectedEmotions = [];
-    
-    // البحث في كل شعور
-    for (const [emotion, data] of Object.entries(langData)) {
-        for (const keyword of data.keywords) {
-            if (message.includes(keyword.toLowerCase())) {
-                detectedEmotions.push({
-                    emotion: emotion,
-                    confidence: keyword.length, // ثقة أعلى للكلمات الأطول
-                    data: data
-                });
-            }
-        }
+    const chatBox = document.getElementById('chat-box');
+    if (!chatBox) {
+        console.error('عنصر chat-box غير موجود!');
+        return;
     }
     
-    // إرجاع الشعور الأكثر ثقة
-    if (detectedEmotions.length > 0) {
-        detectedEmotions.sort((a, b) => b.confidence - a.confidence);
-        return detectedEmotions[0];
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${sender}-message`;
+    messageDiv.textContent = message;
+    messageDiv.style.padding = '10px';
+    messageDiv.style.margin = '5px';
+    messageDiv.style.borderRadius = '10px';
+    messageDiv.style.maxWidth = '70%';
+    
+    if (sender === 'user') {
+        messageDiv.style.background = '#e3f2fd';
+        messageDiv.style.marginLeft = 'auto';
+        messageDiv.style.textAlign = 'left';
+    } else {
+        messageDiv.style.background = '#f5f5f5';
+        messageDiv.style.marginRight = 'auto';
+        messageDiv.style.textAlign = 'right';
     }
     
-    return null;
+    chatBox.appendChild(messageDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// تغيير الخلفية المتحركة
-function changeBackgroundAnimation(animationFile) {
-    // إيقاف الأنيميشن الحالي
-    if (currentAnimation) {
-        currentAnimation.destroy();
-    }
-    
-    // تحميل الأنيميشن الجديد
-    const animationContainer = document.getElementById('background-animation');
-    if (!animationContainer) {
-        // إنشاء حاوية للخلفية إذا لم تكن موجودة
-        const container = document.createElement('div');
-        container.id = 'background-animation';
-        container.style.position = 'fixed';
-        container.style.top = '0';
-        container.style.left = '0';
-        container.style.width = '100%';
-        container.style.height = '100%';
-        container.style.zIndex = '-1';
-        document.body.appendChild(container);
-    }
-    
-    // تحميل الأنيميشن الجديد
-    currentAnimation = lottie.loadAnimation({
-        container: document.getElementById('background-animation'),
-        path: animationFile,
-        renderer: 'svg',
-        loop: true,
-        autoplay: true
-    });
-}
-
-// إرسال الرسالة مع الذكاء الاصطناعي
+// دالة إرسال الرسالة المبسطة
 function sendMessage() {
-    const userInput = document.getElementById('user-input');
-    const message = userInput.value.trim();
+    console.log('تم استدعاء sendMessage');
     
-    if (!message) return;
+    const userInput = document.getElementById('user-input');
+    if (!userInput) {
+        console.error('عنصر user-input غير موجود!');
+        return;
+    }
+    
+    const message = userInput.value.trim();
+    console.log('الرسالة:', message);
+    
+    if (!message) {
+        console.log('الرسالة فارغة');
+        return;
+    }
     
     // إضافة رسالة المستخدم
     addMessageToChat(message, 'user');
     userInput.value = '';
     
-    // البحث عن المشاعر
-    const detectedEmotion = detectEmotion(message, currentLanguage);
-    
-    // إعداد رد الذكاء الاصطناعي
-    let botResponse = '';
-    let animationFile = 'Background Full Screen-Night.json'; // افتراضي
-    
-    if (detectedEmotion) {
-        const responses = detectedEmotion.data.responses;
-        botResponse = responses[Math.floor(Math.random() * responses.length)];
-        animationFile = detectedEmotion.data.animation;
-        
-        console.log(`تم اكتشاف الشعور: ${detectedEmotion.emotion}`);
-    } else {
-        // رد افتراضي إذا لم يتم التعرف على الشعور
-        const defaultResponses = {
-            'ar': 'أفهم مشاعرك، هل يمكنك شرح المزيد؟',
-            'en': 'I understand your feelings, can you explain more?',
-            'es': 'Entiendo tus sentimientos, ¿puedes explicar más?',
-            'fr': 'Je comprends vos sentiments, pouvez-vous expliquer davantage ?',
-            'hi': 'मैं आपकी भावनाओं को समझता हूं, क्या आप और समझा सकते हैं?',
-            'tl': 'Naiintindihan ko ang iyong nararamdaman, maaari mo bang ipaliwanag nang higit pa?'
-        };
-        botResponse = defaultResponses[currentLanguage] || defaultResponses['ar'];
-    }
-    
-    // تغيير الخلفية
-    changeBackgroundAnimation(animationFile);
-    
-    // إضافة رد البوت بعد تأخير بسيط
+    // رد بسيط من البوت
     setTimeout(() => {
-        addMessageToChat(botResponse, 'bot');
+        const responses = {
+            'ar': ['أهلاً بك!', 'كيف حالك؟', 'أنا هنا لمساعدتك'],
+            'en': ['Hello!', 'How are you?', 'I am here to help you'],
+            'es': ['¡Hola!', '¿Cómo estás?', 'Estoy aquí para ayudarte'],
+            'fr': ['Bonjour !', 'Comment ça va ?', 'Je suis ici pour vous aider'],
+            'hi': ['नमस्ते!', 'आप कैसे हैं?', 'मैं आपकी मदद के लिए यहां हूं'],
+            'tl': ['Kamusta!', 'Kumusta ka?', 'Nandito ako para tulungan ka']
+        };
+        
+        const langResponses = responses[currentLanguage] || responses['ar'];
+        const randomResponse = langResponses[Math.floor(Math.random() * langResponses.length)];
+        
+        addMessageToChat(randomResponse, 'bot');
     }, 1000);
 }
 
-// إعداد event listeners
+// إعداد event listeners مع تصحيح الأخطاء
 function setupEventListeners() {
+    console.log('بدء إعداد event listeners...');
+    
     const button = document.getElementById('send-btn');
     const userInput = document.getElementById('user-input');
     
-    button.addEventListener('click', sendMessage);
+    if (!button) {
+        console.error('زر الإرسال غير موجود!');
+        return;
+    }
+    
+    if (!userInput) {
+        console.error('حقل الإدخال غير موجود!');
+        return;
+    }
+    
+    console.log('تم العثور على العناصر بنجاح');
+    
+    // إزالة أي event listeners قديمة
+    button.onclick = null;
+    userInput.onkeypress = null;
+    
+    // إضافة event listeners جديدة
+    button.addEventListener('click', function() {
+        console.log('تم النقر على زر الإرسال');
+        sendMessage();
+    });
     
     userInput.addEventListener('keypress', function(e) {
+        console.log('تم الضغط على مفتاح:', e.key);
         if (e.key === 'Enter') {
+            console.log('تم الضغط على Enter');
             sendMessage();
         }
     });
     
     // أزرار اللغة
-    document.querySelectorAll('.lang-btn').forEach(btn => {
+    const langButtons = document.querySelectorAll('.lang-btn');
+    console.log('عدد أزرار اللغة:', langButtons.length);
+    
+    langButtons.forEach(btn => {
         btn.addEventListener('click', function() {
             const lang = this.getAttribute('data-lang');
+            console.log('تم النقر على لغة:', lang);
             switchLanguage(lang);
         });
     });
+    
+    console.log('تم إعداد جميع event listeners بنجاح');
 }
 
 // تبديل اللغة
 function switchLanguage(lang) {
-    if (!emotionsData[lang]) {
-        alert('هذه اللغة غير متوفرة حالياً');
-        return;
-    }
+    console.log('تبديل اللغة إلى:', lang);
     
     currentLanguage = lang;
-    document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector(`[data-lang="${lang}"]`).classList.add('active');
     
-    // تحديث الرسالة الترحيبية
-    const welcomeMsg = document.querySelector('.bot-message');
-    if (welcomeMsg) {
-        const greetings = {
-            'ar': 'مرحباً! أخبرني عن مشاعرك اليوم 🌸',
-            'en': 'Hello! Tell me about your feelings today 🌸',
-            'es': '¡Hola! Cuéntame sobre tus sentimientos hoy 🌸',
-            'fr': 'Bonjour ! Parlez-moi de vos sentiments aujourd\'hui 🌸',
-            'hi': 'नमस्ते! आज मुझे अपनी भावनाओं के बारे में बताएं 🌸',
-            'tl': 'Kamusta! Sabihin sa akin ang tungkol sa iyong nararamdaman ngayon 🌸'
+    // تحديث الأزرار النشطة
+    document.querySelectorAll('.lang-btn').forEach(b => {
+        b.classList.remove('active');
+    });
+    
+    const activeBtn = document.querySelector(`[data-lang="${lang}"]`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
+    
+    // تحديث placeholder
+    const userInput = document.getElementById('user-input');
+    if (userInput) {
+        const placeholders = {
+            'ar': 'اكتب رسالتك هنا...',
+            'en': 'Type your message here...',
+            'es': 'Escribe tu mensaje aquí...',
+            'fr': 'Tapez votre message ici...',
+            'hi': 'अपना संदेश यहाँ लिखें...',
+            'tl': 'I-type ang iyong mensahe dito...'
         };
-        welcomeMsg.textContent = greetings[lang] || greetings['ar'];
+        userInput.placeholder = placeholders[lang] || placeholders['ar'];
     }
 }
 
-// بدء التحميل
-document.addEventListener('DOMContentLoaded', loadEmotionsData);
+// بدء التحميل عندما تكون الصفحة جاهزة
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('الصفحة تم تحميلها بالكامل');
+    loadEmotionsData();
+});
+
+// أيضًا نستدعي الإعداد عندما يتم تحميل الـ DOM بالكامل
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadEmotionsData);
+} else {
+    loadEmotionsData();
+               }
