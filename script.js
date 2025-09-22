@@ -36,5 +36,5 @@ document.getElementById('send-btn').addEventListener('click', async () => {
 
   const lang = "en";
   const botReply = getBotResponse(message, lang);
-  showMessage(botReply,"bot");
+  showMessage(botReply,"Bot");
 });
