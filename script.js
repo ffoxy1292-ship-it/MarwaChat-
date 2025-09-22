@@ -58,8 +58,8 @@ function showReply(reply, sender="Bot") {
 }
 
 // ---------------- التعامل مع المستخدم ----------------
-document.getElementById('sendBtn').addEventListener('click', async () => {
-  const input = document.getElementById('userInput');
+document.getElementById('send-Btn').addEventListener('click', async () => {
+  const input = document.getElementById('user-Input');
   const message = input.value.trim();
   if (!message) return;
   input.value = '';
