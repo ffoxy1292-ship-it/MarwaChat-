@@ -2,46 +2,45 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MarwaChat - الدردشة متعددة اللغات</title>
-    <link rel="stylesheet" href="style.css">
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.7.4/lottie.min.js"></script>
-
+    <title>MarwaChat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
+    <style>
+        #lottie-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        .chat-container {
+            background: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>MarwaChat 💬</h1>
-        <div class="language-selector">
-            <button class="lang-btn active" data-lang="ar">العربية</button>
+    <div id="lottie-container"></div>
+    
+    <div class="chat-container">
+        <div class="lang-buttons">
+            <button class="lang-btn active" data-lang="ar">عربي</button>
             <button class="lang-btn" data-lang="en">English</button>
             <button class="lang-btn" data-lang="es">Español</button>
             <button class="lang-btn" data-lang="fr">Français</button>
             <button class="lang-btn" data-lang="hi">हिन्दी</button>
             <button class="lang-btn" data-lang="tl">Tagalog</button>
         </div>
-
-        <div id="chat-container" class="chat-container">
-            <div class="message bot-message">
-                مرحباً! أنا MarwaChat، كيف يمكنني مساعدتك اليوم؟ 🌸
-            </div>
-        </div>
-
-        <div class="typing-indicator" id="typing-indicator">
-            <span>يكتب...</span>
-            <div class="typing-dots">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </div>
- <div id="lottie-bg"></div>
-        <div class="input-container">
+        
+        <div id="chat-box"></div>
+        
+        <div class="input-area">
             <input type="text" id="user-input" placeholder="اكتب رسالتك هنا...">
             <button id="send-btn">إرسال</button>
         </div>
     </div>
-
+    
     <script src="script.js"></script>
 </body>
 </html>
