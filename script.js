@@ -28,7 +28,7 @@ document.getElementById('send-btn').addEventListener('click', async () => {
   if (!message) return;
   input.value = '';
 
-  showMessage(message);
+  showMessage(message,"You");
 
   if (!allResponses || Object.keys(allResponses).length === 0) {
     await loadResponses();
@@ -36,5 +36,5 @@ document.getElementById('send-btn').addEventListener('click', async () => {
 
   const lang = "en";
   const botReply = getBotResponse(message, lang);
-  showMessage(botReply);
+  showMessage(botReply,"bot");
 });
