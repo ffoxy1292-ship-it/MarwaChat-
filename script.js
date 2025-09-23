@@ -1,7 +1,9 @@
 let allResponses = {};
+console.log("Initial allResponses:" ,allResponses);
 async function loadResponses() {
   const res = await fetch('responses.json');
-  allResponses = await res.json();
+    allResponses = await res.json();
+  console.log("Loaded responses:",allResponses);
 }
 function showMessage(message, sender="Bot") {
   const chatContainer = document.getElementById('chat-container');
