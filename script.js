@@ -16,7 +16,7 @@ const placeholders = {
     tl: 'I-type ang iyong mensahe dito...'
 };
 
-// كلمات المشاعر مع قيمها (يجب أن تكون خارج الدالة)
+
 const sentimentWords = {
     // العربية
     "فرحان": 2, "مسرور": 2, "سعيدة": 2, "فرحة": 2,  
@@ -75,11 +75,11 @@ async function loadResponses() {
         responses = await res.json();
         console.log('تم تحميل الردود بنجاح');
         
-        // التحقق من وجود جميع اللغات في الملف
+        
         const availableLanguages = Object.keys(responses);
         console.log('اللغات المتاحة:', availableLanguages);
         
-        // تعطيل أزرار اللغات غير المتوفرة
+        
         document.querySelectorAll('.lang-btn').forEach(btn => {
             const lang = btn.getAttribute('data-lang');
             if (!availableLanguages.includes(lang)) {
@@ -90,7 +90,7 @@ async function loadResponses() {
         });
     } catch (err) {
         console.error('خطأ في تحميل responses.json:', err);
-        // استخدام ردود افتراضية بسيطة كاحتياطي
+    
         responses = {
             ar: { 
                 greeting: ["مرحباً! كيف يمكنني مساعدتك؟"],
@@ -139,7 +139,7 @@ function analyzeSentiment(text) {
                 console.log("تطبيق النفي، القيمة الجديدة:", value);
             }
             
-            // التحقق من وجود معدل في الكلمة التالية
+            
             if (i + 1 < words.length) {
                 let nextWord = words[i + 1].toLowerCase().replace(/[.,!?;:]$/, '');
                 if (modifiers[nextWord] !== undefined) {
@@ -197,7 +197,7 @@ function getRandomResponse(emotion) {
     
     if (!responses[currentLanguage][emotion]) {
         console.log("لا توجد ردود للعاطفة:", emotion);
-        // إذا لم يكن هناك ردود للمشاعر المحددة، استخدم الردود المحايدة
+        // إ
         if (responses[currentLanguage]['neutral']) {
             const neutralChoices = responses[currentLanguage]['neutral'];
             return neutralChoices[Math.floor(Math.random() * neutralChoices.length)];
@@ -240,7 +240,7 @@ function setupEventListeners() {
         button.addEventListener('click', function() {
             const lang = this.getAttribute('data-lang');
             
-            // التحقق من أن اللغة متوفرة قبل التبديل
+            
             if (!responses[lang]) {
                 alert(lang === 'ar' ? 
                     "هذه اللغة غير متوفرة حالياً" : 
