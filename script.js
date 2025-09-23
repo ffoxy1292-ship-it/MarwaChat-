@@ -66,7 +66,7 @@ const negationWords = [
     "non", "ne", "pas", "jamais",
     "नहीं", "मत", "ना",
     "hindi", "ayaw", "huwag"
-};
+];
 
 async function loadResponses() {
     try {
