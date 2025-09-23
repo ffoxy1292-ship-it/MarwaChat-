@@ -16,7 +16,6 @@ const placeholders = {
     tl: 'I-type ang iyong mensahe dito...'
 };
 
-
 const sentimentWords = {
     // العربية
     "فرحان": 2, "مسرور": 2, "سعيدة": 2, "فرحة": 2,  
@@ -71,14 +70,13 @@ const negationWords = [
 
 async function loadResponses() {
     try {
-        const res = await fetch('responses.json');
+        const res = await fetch('responses.json'); // تأكد من المسار الصحيح
+        if (!res.ok) throw new Error('Failed to load responses');
         responses = await res.json();
         console.log('تم تحميل الردود بنجاح');
         
-        
         const availableLanguages = Object.keys(responses);
         console.log('اللغات المتاحة:', availableLanguages);
-        
         
         document.querySelectorAll('.lang-btn').forEach(btn => {
             const lang = btn.getAttribute('data-lang');
@@ -90,37 +88,42 @@ async function loadResponses() {
         });
     } catch (err) {
         console.error('خطأ في تحميل responses.json:', err);
-    
         responses = {
             ar: { 
                 greeting: ["مرحباً! كيف يمكنني مساعدتك؟"],
-                neutral: ["أخبرني المزيد عن ذلك"]
+                neutral: ["أخبرني المزيد عن ذلك"],
+                happiness: ["أشعر بسعادتك! 😊"],
+                sadness: ["أنا هنا لدعمك 💕"],
+                anger: ["لنتحدث بهدوء... 🌸"]
             },
             en: { 
                 greeting: ["Hello! How can I help you?"],
-                neutral: ["Tell me more about that"]
+                neutral: ["Tell me more about that"],
+                happiness: ["I feel your happiness! 😊"],
+                sadness: ["I'm here to support you 💕"],
+                anger: ["Let's talk calmly... 🌸"]
             }
         };
     }
 }
 
-async function initChat() {
-    await loadResponses();
-    updatePlaceholder();
-    setupEventListeners();
-}
 
-document.addEventListener('DOMContentLoaded', initChat);
+function cleanText(text) {
+    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
 
 function analyzeSentiment(text) {
     console.log("تحليل المشاعر للنص:", text);
+    if (!text || text.trim() === '') return 'neutral';
+    
     let score = 0;  
-    let negation = false;  
-    const words = text.split(/\s+/);
+    let negation = false;
+    const cleanedText = cleanText(text);
+    const words = cleanedText.split(/\s+/);
     console.log("الكلمات المستخرجة:", words);
 
     for (let i = 0; i < words.length; i++) {
-        let word = words[i].toLowerCase().replace(/[.,!?;:]$/, '');
+        let word = words[i].replace(/[.,!?;:]$/, '');
         console.log("معالجة الكلمة:", word);
         
         if (negationWords.includes(word)) {
@@ -139,9 +142,8 @@ function analyzeSentiment(text) {
                 console.log("تطبيق النفي، القيمة الجديدة:", value);
             }
             
-            
             if (i + 1 < words.length) {
-                let nextWord = words[i + 1].toLowerCase().replace(/[.,!?;:]$/, '');
+                let nextWord = words[i + 1].replace(/[.,!?;:]$/, '');
                 if (modifiers[nextWord] !== undefined) {
                     value *= modifiers[nextWord];
                     console.log("تطبيق المعدل:", nextWord, "القيمة الجديدة:", value);
@@ -187,7 +189,6 @@ function updateConversationContext(text, emotion) {
 function getRandomResponse(emotion) {
     console.log("العاطفة المحددة:", emotion);
     console.log("اللغة الحالية:", currentLanguage);
-    console.log("الردود المتاحة:", responses[currentLanguage]);
     
     if (!responses[currentLanguage]) {
         return currentLanguage === 'ar' ? 
@@ -197,7 +198,6 @@ function getRandomResponse(emotion) {
     
     if (!responses[currentLanguage][emotion]) {
         console.log("لا توجد ردود للعاطفة:", emotion);
-        // إ
         if (responses[currentLanguage]['neutral']) {
             const neutralChoices = responses[currentLanguage]['neutral'];
             return neutralChoices[Math.floor(Math.random() * neutralChoices.length)];
@@ -220,26 +220,23 @@ function updatePlaceholder() {
     }
 }
 
+
 function setupEventListeners() {
     const button = document.getElementById('send-btn');
     const userInput = document.getElementById('user-input');
     
-    if (button) {
+    if (button && userInput) {
         button.addEventListener('click', sendMessage);
-    }
-    
-    if (userInput) {
         userInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
+            if (e.key === 'Enter') sendMessage();
         });
+    } else {
+        console.error('لم يتم العثور على عناصر الـ DOM المطلوبة');
     }
 
     document.querySelectorAll('.lang-btn').forEach(button => {
         button.addEventListener('click', function() {
             const lang = this.getAttribute('data-lang');
-            
             
             if (!responses[lang]) {
                 alert(lang === 'ar' ? 
@@ -253,22 +250,17 @@ function setupEventListeners() {
             currentLanguage = lang;
             updatePlaceholder();
             
-            // تحديث رسالة الترحيب بناءً على اللغة المختارة
             const welcomeMsg = document.querySelector('.bot-message');
             if (welcomeMsg) {
-                if (lang === 'ar') {
-                    welcomeMsg.textContent = 'مرحباً! أنا MarwaChat، كيف يمكنني مساعدتك اليوم؟ 🌸';
-                } else if (lang === 'en') {
-                    welcomeMsg.textContent = 'Hello! I am MarwaChat, how can I help you today? 🌸';
-                } else if (lang === 'es') {
-                    welcomeMsg.textContent = '¡Hola! Soy MarwaChat, ¿cómo puedo ayudarte hoy? 🌸';
-                } else if (lang === 'fr') {
-                    welcomeMsg.textContent = 'Bonjour ! Je suis MarwaChat, comment puis-je vous aider aujourd\'hui ? 🌸';
-                } else if (lang === 'hi') {
-                    welcomeMsg.textContent = 'नमस्ते! मैं MarwaChat हूं, आज मैं आपकी कैसे मदद कर सकता हूं? 🌸';
-                } else if (lang === 'tl') {
-                    welcomeMsg.textContent = 'Kamusta! Ako si MarwaChat, paano kita matutulungan ngayon? 🌸';
-                }
+                const messages = {
+                    ar: 'مرحباً! أنا MarwaChat، كيف يمكنني مساعدتك اليوم؟ 🌸',
+                    en: 'Hello! I am MarwaChat, how can I help you today? 🌸',
+                    es: '¡Hola! Soy MarwaChat, ¿cómo puedo ayudarte hoy? 🌸',
+                    fr: 'Bonjour ! Je suis MarwaChat, comment puis-je vous aider aujourd\'hui ? 🌸',
+                    hi: 'नमस्ते! मैं MarwaChat हूं, आज मैं आपकी कैसे मदद कर सकता हूं? 🌸',
+                    tl: 'Kamusta! Ako si MarwaChat, paano kita matutulungan ngayon? 🌸'
+                };
+                welcomeMsg.textContent = messages[lang] || messages['en'];
             }
         });
     });
@@ -337,7 +329,6 @@ function sendMessage() {
         botMsg.appendChild(feedbackDiv);
         chatContainer.appendChild(botMsg);
         chatContainer.scrollTop = chatContainer.scrollHeight;
-
     }, typingTime);
 }
 
@@ -368,8 +359,16 @@ function rateResponse(responseText, rating) {
     alert(thankYouMessages[currentLanguage] || thankYouMessages['en']);
 }
 
+async function initChat() {
+    await loadResponses();
+    updatePlaceholder();
+    setupEventListeners();
+}
+
 // تهيئة Lottie عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', function() {
+    initChat();
+    
     const lottieContainer = document.getElementById('lottie-bg');
     if (lottieContainer && typeof lottie !== 'undefined') {
         lottie.loadAnimation({
@@ -377,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderer: 'svg',
             loop: true,
             autoplay: true,
-            path: 'Background Full Screen-Night.json'
+            path: './Background Full Screen-Night.json'
         });
     }
 });
